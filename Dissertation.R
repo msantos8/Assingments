@@ -10,7 +10,13 @@ dir.create("Download")
 download.file("http://www.who.int/entity/healthinfo/statistics/Morticd10_part2.zip?ua=1",
               "Download/Morticd10_part2")
 
-unzip("Data/Morticd10_part2")
+?unzip
+
+unzip("Download/Morticd10_part2")
+
+unz("Download/Morticd10_part2")
+
+?unz
 
 
 
@@ -18,6 +24,49 @@ unzip("Data/Morticd10_part2")
   #Read the data from downloaded .zip files
   #http://www.who.int/healthinfo/statistics/mortality_rawdata/en/
   #Jan 11th, 2016
+
+install.packages('dplyr')
+
+installed.packages()
+library('dplyr')
+
+temp <- tempfile()
+download.file("http://www.who.int/entity/healthinfo/statistics/Morticd10_part2.zip?ua=1",temp)
+data <- read.csv(unz(temp, "Download/Morticd10_part2"))
+unlink(temp)
+
+download.file("http://www.who.int/entity/healthinfo/statistics/Morticd10_part2.zip?ua=1","Download/")
+
+
+?read.csv
+
+?tempfile
+
+Mortality <- bind_rows("10_2" = read.csv(unzip("Data/Morticd10_part2.zip")),
+                       "10_1" = read.csv(unzip("Data/Morticd10_part1.zip")),
+                       "9" = read.csv(unzip("Data/morticd9.zip")),
+                       "8" = read.csv(unzip("Data/morticd08.zip")),
+                       "7" = read.csv(unzip("Data/morticd07.zip")),
+                       .id = "ICD")
+
+Mortality$ICD <- factor(as.factor(Mortality$ICD), c("7","8","9","10_1","10_2"))
+summary (Mortality$ICD)
+
+
+
+table(Mortality$ICD)
+
+?bind_rows
+
+summary(Mortality$ICD)
+head(Mortality)
+
+
+Mortality <- rbind(read.csv(unzip("Data/Morticd10_part2.zip")),
+                   read.csv(unzip("Data/Morticd10_part1.zip")),
+                   read.csv(unzip("Data/morticd9.zip")),
+                   read.csv(unzip("Data/morticd08.zip")),
+                   read.csv(unzip("Data/morticd07.zip")))
 
 Mortality <- rbind(read.csv(unzip("Data/Morticd10_part2.zip")),
                    read.csv(unzip("Data/Morticd10_part1.zip")),

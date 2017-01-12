@@ -23,6 +23,7 @@ myiris$charspecies <- as.character(myiris$Species)
 summary(myiris)
 
 
+
 ```
 
 3. Use `xtabs()` to see how the values in these new columns line up with the original factor column.

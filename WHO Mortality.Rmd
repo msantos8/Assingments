@@ -1,0 +1,67 @@
+---
+title: "WHO Mortality"
+author: "Mateus Renno Santos"
+date: "January 12, 2017"
+output: html_document
+---
+## Install
+
+```{r}
+install.packages('dplyr')
+library('dplyr')
+
+```
+
+
+## Download Files
+URL: http://www.who.int/healthinfo/statistics/mortality_rawdata/en/
+
+```{r}
+download.file("http://www.who.int/entity/healthinfo/statistics/morticd07.zip?ua=1",
+              "Download/Morticd7")
+unzip("Download/Morticd7.zip")
+
+#http://www.who.int/entity/healthinfo/statistics/Morticd10_part2.zip?ua=1
+#http://www.who.int/entity/healthinfo/statistics/Morticd10_part1.zip?ua=1
+#http://www.who.int/entity/healthinfo/statistics/morticd9.zip?ua=1
+#http://www.who.int/entity/healthinfo/statistics/morticd08.zip?ua=1
+#http://www.who.int/entity/healthinfo/statistics/morticd07.zip?ua=1
+#http://www.who.int/entity/healthinfo/Pop.zip?ua=1
+
+##########################################################################################################
+#?http://stackoverflow.com/questions/3053833/using-r-to-download-zipped-data-file-extract-and-import-data
+
+temp <- tempfile()
+download.file("http://www.who.int/entity/healthinfo/statistics/morticd07.zip?ua=1",temp)
+data <- read.table(unz(temp, "MortIcd7"))
+unlink(temp)
+
+```
+
+## Extract Data
+
+```{r}
+library('dplyr')
+
+Mortality <- bind_rows("10_2" = read.csv(unzip("Data/Morticd10_part2.zip")),
+                       "10_1" = read.csv(unzip("Data/Morticd10_part1.zip")),
+                       "9" = read.csv(unzip("Data/morticd9.zip")),
+                       "8" = read.csv(unzip("Data/morticd08.zip")),
+                       "7" = read.csv(unzip("Data/morticd07.zip")),
+                       .id = "ICD")
+
+file.remove("Morticd10_part2","Morticd10_part1","Morticd9","Morticd8","MortIcd7","pop")
+
+Mortality$ICD <- factor(as.factor(Mortality$ICD), c("10_2","10_1","9","8","7"))
+
+save (Mortality, file = "Data/Mortality.RData")
+
+Population <- read.csv(unzip("Data/Pop.zip"))
+
+save(Population, file = "Data/Population.RData")
+
+load("Data/Mortality.RData")
+load("Data/Population.RData")
+```
+
+

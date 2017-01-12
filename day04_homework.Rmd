@@ -1,0 +1,60 @@
+---
+title: "Day 4 Homework"
+output: html_document
+---
+
+1. Find some aspect of your data that needs to be combined or merged in some way.  This could be a variety of things:
+  - multiple "sheets" in an Excel
+  - multiple files that should be combined into one data set
+  - properties that need to be merged in to one data set. For example:
+    - you have a table of subject properties (gender, handedness, etc.) that need to be merged into the item-level data
+    - you have other information on countries (population, etc.) that need to be merged in
+  - if you DON'T have this naturally-occurring issue, figure out a way to manufacture it. For example:
+    - split up your data into chunks
+    - make up some new table of information that you want to merge in
+  - Explain (in words) what you are trying to do
+  - Use binding/merging commands to accomplish this
+
+Answer 1.
+  -My data is divided in 5 different zip files. 
+  -I am attempting to combine all these files in a single data frame.
+    -Including an id variable that identifies the data source (ICD)
+
+```{r}
+library('dplyr')
+
+Mortality <- bind_rows("10_2" = read.csv(unzip("Data/Morticd10_part2.zip")),
+                       "10_1" = read.csv(unzip("Data/Morticd10_part1.zip")),
+                       "9" = read.csv(unzip("Data/morticd9.zip")),
+                       "8" = read.csv(unzip("Data/morticd08.zip")),
+                       "7" = read.csv(unzip("Data/morticd07.zip")),
+                       .id = "ICD")
+save (Mortality, file = "Data/Mortality.RData")
+
+Population <- read.csv(unzip("Data/Pop.zip"))
+save(Population, file = "Data/Population.RData")
+```
+
+I had two issues:
+  -Issue #1: "ICD" was generated as a character variable, instead of a factor
+    -I found no solution within the bind_rows function. Is there one?
+  -Issue #2: My working folder was littered with large files for each piece from the file extraction.
+  -The best solutions I found are bellow:
+
+Issue #1
+  -Is there a way to prevent the variable from being transformed?
+
+```{r}
+Mortality$ICD <- factor(as.factor(Mortality$ICD), c("7","8","9","10_1","10_2"))
+summary (Mortality$ICD)
+
+```
+
+Issue #2
+  -Question: Is there a way to prevent these files from being generated? I am researching about temp files. Is there a   better solution?
+
+```{r}
+file.remove("Morticd10_part2","Morticd10_part1","Morticd9","Morticd8","MortIcd7","pop")
+
+```
+
