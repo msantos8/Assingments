@@ -1,0 +1,104 @@
+---
+title: "Day 3 Practice"
+output: html_document
+---
+
+1. Make a "copy" of the `iris` data set in your workspace. Use `summary()` on it, identify a factor column.
+
+```{r}
+myiris <- iris
+summary(myiris)
+summary(myiris$Species)
+
+```
+
+2. Create different versions of the factor column, in the new data set:
+   a. a numeric vector with `as.numeric()`
+   b. a character vector
+   
+```{r}
+
+myiris$numspecies <- as.numeric(myiris$Species)
+myiris$charspecies <- as.character(myiris$Species)
+summary(myiris)
+
+
+```
+
+3. Use `xtabs()` to see how the values in these new columns line up with the original factor column.
+
+```{r}
+xtabs(~myiris$Species + numspecies, myiris)
+xtabs(~myiris$Species + charspecies, myiris)
+
+#All three
+xtabs(~myiris$Species + numspecies + charspecies, myiris)
+
+```
+
+4. Check the order of levels of Species with `levels()`. Create a new column from this factor, changing the order of the levels, using:
+  a. `relevel()`
+  b. `reorder()`
+  c. `factor()`
+
+```{r}
+
+summary(myiris)
+summary(myiris$Species)
+levels(myiris$Species)
+
+#a
+myiris$SpeciesRel <- relevel(myiris$Species,"virginica")
+summary(myiris$SpeciesRel)
+
+#b
+myiris$SpeciesReo <- reorder(levels(myiris$Species),c(2,1,3))
+summary(myiris$SpeciesReo)
+
+#c
+myiris$SpeciesFac <- factor(myiris$Species, levels =  c("virginica","setosa","versicolor"))
+summary(myiris$SpeciesFac)
+
+```
+
+5. Working with missing values
+   - read in the data from "CognitionPaperModifiedData.csv"
+   - locate NAs
+   - display the rows of the data frame where the WithinMinPairs variable has missing values
+   - create a new column that's a copy of the WithinMinPairs column
+   - replace all missing values in this column with zeros
+   #Ignore maybe. Why it does not help me? Missing data - use `xtabs()` to check this change in coding
+
+```{r}
+scottdata <- read.csv("other/CognitionPaperModifiedData.csv")
+
+# locate NAs
+summary(scottdata)
+
+#display the rows of the data frame where the WithinMinPairs variable has missing values
+scottdata[scottdata$WithinMinPairs == NA, ]
+scottdata[is.na(scottdata$WithinMinPairs), ]
+
+#create a new column that's a copy of the WithinMinPairs column
+scottdata$WithinMinPairsCopy <- scottdata$WithinMinPairs
+
+#replace all missing values in this column with zeros
+
+  #Does not work
+scottdata$WithinMinPairsCopy[scottdata$WithinMinPairsCopy == NA] <- 0
+summary (scottdata$WithinMinPairsCopy)
+
+  #Works
+scottdata$WithinMinPairsCopy[is.na(scottdata$WithinMinPairsCopy)] <- 0
+summary (scottdata$WithinMinPairsCopy)
+
+#use `xtabs()` to check this change in coding
+t <- xtabs(~WithinMinPairs + WithinMinPairsCopy, scottdata, na.action = na.pass, exclude = NULL)
+
+str(t)
+
+t[c(1,2,3),c(1,2,231)]
+
+
+```
+
