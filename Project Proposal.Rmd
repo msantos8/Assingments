@@ -1,0 +1,54 @@
+---
+title: "Project Proposal"
+author: "Mateus Renno Santos"
+date: "January 13, 2017"
+output: html_document
+---
+
+# Objective
+Measure the association between the proportion of the population between 15 to 24 years of age, and homicide rates of countries. I will present a simple linear regression between the two variables. I will also attempt to descriptivelly explore my data with line graphs by country, and over time.
+
+# Data (WHO Mortality Database)
+The original raw files of the WHO mortality database is divided in 6 files. The first 5 correspond to homicides classified according to multiple versions of the International Classifications of Diseases (ICD 7 to 10). The last file corresponds to the population of countries over years.
+The datasets contains information submitted by member countries. Due to variations in recording practices accross countries, the database contains extensive amount of missing data, and several inconsistencies over time. Future adjustments may be necessary.
+
+## Mortality Data
+This database compiles all death records submitted by member countries by cause of death and year.
+My goal is to use the manual of the International Classification of Diseases (ICD) to extract only homicides from all other death records. This is particularly challenging given variations in the classification of homicides by country and within one same country over time.
+Deaths are also recorded by sex, and age range.
+This data is also very large. I will probably develop my code using a smaller sample of observations.
+
+```{r mortality}
+load("Data/Mortality.RData")
+
+str(Mortality)
+
+```
+
+## Population Data
+This tables contains the population of countries and years. It contains one collumn for each age range. I will merge these data with the homicide data in order to obtain homicide rates by 100,000 population, and to compare homicide rates with the proportion of the population at certain age ranges.
+
+```{r population}
+load("Data/Population.RData")
+
+str(Population)
+
+```
+
+# Procedures
+Listed as they will appear in the code. Marked procedures (!) will be attempted, but may not be a part of the final project for the class. I would execute them at a later stage of my dissertation.
+
+1. (!) Download the data using r (r Download)
+2. Extract and combine all files (r Mortality)
+3. Remove all non-homicide causes of death (r Homicide)
+  + Merge with the Population data
+4. Reshape the file (from Country[Year[Sex]] to Country[Year]) (r Reshape)
+  + Including the added records for both sexes 
+5. Calculate homicide rates and other variables (r Rates)
+6. Regress homicides in the percentage of the population between 15 and 24 years
+7. (!) Make a line graph of homicides and of the % of the population 15 to 24 over time
+  + (!) Investigate inconsistencies in homicide rates over time
+    
+Ultimatly, I am attempting to write a code to generate a homicide database that would be reproduceable by any researcher. In the future, I will incorporate other sources of country-level data on homicides and other countrol variables from multiple sources.
+
+

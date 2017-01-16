@@ -1,3 +1,20 @@
+
+
+Mortality <- bind_rows("10_2" = read.csv(unz("Data/Morticd10_part2.zip","Morticd10_part2")),
+                       "10_1" = read.csv(unz("Data/Morticd10_part1.zip","Morticd10_part1")),
+                       "9" = read.csv(unz("Data/morticd9.zip","Morticd9")),
+                       "8" = read.csv(unz("Data/morticd08.zip","Morticd8")),
+                       "7" = read.csv(unz("Data/morticd07.zip","MortIcd7")),
+                       .id = "ICD")
+
+
+unzip("Data/Morticd10_part2.zip")
+
+unz("http://www.who.int/entity/healthinfo/statistics/morticd07.zip?ua=1","MortIcd7")
+
+
+
+############################################################################
 #1. Donwload
   #Donwload and save the original files from the WHO Mortality Database
   #? http://stackoverflow.com/questions/3053833/using-r-to-download-zipped-data-file-extract-and-import-data

@@ -4,22 +4,27 @@ author: "Mateus Renno Santos"
 date: "January 12, 2017"
 output: html_document
 ---
-## Install
+## Setup
 
 ```{r}
-install.packages('dplyr')
-library('dplyr')
+# Function
+  #Library a package, and installs the package if necessary
+usePackage <- function(p) {
+    if (!is.element(p, installed.packages()[,1]))
+        install.packages(p, dep = TRUE)
+    require(p, character.only = TRUE)
+}
 
 ```
 
 
-## Download Files
+## (!Broke) Download Files
 URL: http://www.who.int/healthinfo/statistics/mortality_rawdata/en/
 
-```{r}
+```{r, eval=FALSE}
 download.file("http://www.who.int/entity/healthinfo/statistics/morticd07.zip?ua=1",
               "Download/Morticd7")
-unzip("Download/Morticd7.zip")
+unzip("Download/Morticd7")
 
 #http://www.who.int/entity/healthinfo/statistics/Morticd10_part2.zip?ua=1
 #http://www.who.int/entity/healthinfo/statistics/Morticd10_part1.zip?ua=1
@@ -28,6 +33,7 @@ unzip("Download/Morticd7.zip")
 #http://www.who.int/entity/healthinfo/statistics/morticd07.zip?ua=1
 #http://www.who.int/entity/healthinfo/Pop.zip?ua=1
 
+#######Stackoverflow R specific questions
 ##########################################################################################################
 #?http://stackoverflow.com/questions/3053833/using-r-to-download-zipped-data-file-extract-and-import-data
 
@@ -38,30 +44,64 @@ unlink(temp)
 
 ```
 
+
 ## Extract Data
 
 ```{r}
-library('dplyr')
+usePackage('dplyr')
 
-Mortality <- bind_rows("10_2" = read.csv(unzip("Data/Morticd10_part2.zip")),
-                       "10_1" = read.csv(unzip("Data/Morticd10_part1.zip")),
-                       "9" = read.csv(unzip("Data/morticd9.zip")),
-                       "8" = read.csv(unzip("Data/morticd08.zip")),
-                       "7" = read.csv(unzip("Data/morticd07.zip")),
+Mortality <- bind_rows("10_2" = read.csv(unz("Data/Morticd10_part2.zip","Morticd10_part2")),
+                       "10_1" = read.csv(unz("Data/Morticd10_part1.zip","Morticd10_part1")),
+                       "9" = read.csv(unz("Data/morticd9.zip","Morticd9")),
+                       "8" = read.csv(unz("Data/morticd08.zip","Morticd8")),
+                       "7" = read.csv(unz("Data/morticd07.zip","MortIcd7")),
                        .id = "ICD")
-
-file.remove("Morticd10_part2","Morticd10_part1","Morticd9","Morticd8","MortIcd7","pop")
 
 Mortality$ICD <- factor(as.factor(Mortality$ICD), c("10_2","10_1","9","8","7"))
 
-save (Mortality, file = "Data/Mortality.RData")
-
 Population <- read.csv(unzip("Data/Pop.zip"))
 
+save (Mortality, file = "Data/Mortality.RData")
 save(Population, file = "Data/Population.RData")
 
 load("Data/Mortality.RData")
 load("Data/Population.RData")
 ```
 
+## Homicides
+-Remove all non-homicide causes
+
+## Collapse
+-Collapse all causes of death
+
+```{r}
+usePackage('dplyr')
+
+collapsed <- data.frame(
+  summarize(group_by(Mortality, Country, Year, Sex), 
+            Deaths = sum(Deaths1)))
+
+```
+
+## Reshape
+-Make One column for each Death for each sex; make the total
+
+reshape2 package/dcast command
+  -Seems best because of multiple collumns. If anything, make the reshape command several times
+
+reshaped <- 
+  reshape(collapsed, 
+          timevar = "Sex", 
+          idvar = colnames(collapsed[,c(1:2)]), 
+          direction = "wide")
+
+reshaped$Deaths.Total <- mapply (sum, reshaped$Deaths.Male, reshaped$Deaths.Female, reshaped$Deaths.Unspecified, na.rm = TRUE)
+
+usePackage('tidyr')
+gather
+
+## Merge Population
+
+#Q. Why are population data missing for some countries-years and where can I find other sources of population data?
+#A. Some countries do not report population data to WHO.  Users can find population estimates from the United Nations web site http://esa.un.org/unpd/wpp
 

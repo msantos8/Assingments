@@ -1,0 +1,235 @@
+---
+title: "Day 5 Homework"
+output: html_document
+---
+
+0. Reload your data, and re-use the code you already have for getting things formatted nicely (columns renamed, factors relabeled, etc.)
+
+```{r}
+usePackage <- function(p) {
+    if (!is.element(p, installed.packages()[,1]))
+        install.packages(p, dep = TRUE)
+    require(p, character.only = TRUE)
+}
+usePackage('dplyr')
+
+Mortality <- bind_rows("10_2" = read.csv(unz("Data/Morticd10_part2.zip","Morticd10_part2")),
+                       "10_1" = read.csv(unz("Data/Morticd10_part1.zip","Morticd10_part1")),
+                       "9" = read.csv(unz("Data/morticd9.zip","Morticd9")),
+                       "8" = read.csv(unz("Data/morticd08.zip","Morticd8")),
+                       "7" = read.csv(unz("Data/morticd07.zip","MortIcd7")),
+                       .id = "ICD")
+
+Mortality$ICD <- factor(as.factor(Mortality$ICD), c("10_2","10_1","9","8","7"))
+
+Mortality$Sex <- factor(Mortality$Sex, labels = c("Male","Female", "Unspecified"))
+
+summary(Mortality$Sex)
+
+#Mortality$Sex[Mortality$Sex=="Missing",] <- NA 
+#xtabs(~Mortality$Sex + Mortality$SexNA, na.action = na.pass, exclude = NULL)
+
+Population <- read.csv(unzip("Data/Pop.zip"))
+
+```
+
+1. Aggregate (e.g., get mean/median/max/something) of some numerical variable, over one or more factors.  Use `group_by()` plus `summarize()` from the `dplyr` package.
+
+```{r}
+#Commands were taking long or RStudio was freezing, so I took a random sample out of my data for the purposes of this homework.
+
+MortalitySample <- Mortality [sample(nrow(Mortality), nrow(Mortality)/1000),]
+str(MortalitySample)
+
+summarize(group_by(MortalitySample, Country, Sex, Cause), mean = mean(Deaths1))
+
+```
+
+2. Run TWO DIFFERENT simple analyses or statistical tests, such as linear regression (`lm()`), logistic regression (`glm()`), correlation test (`cor.test()`), t-test (`t.test()`), or non-parametric tests (e.g., `wilcox.test()`).  For each of these:
+  - Describe why you are doing this analysis, i.e., what question is it answering?
+  - I won't judge you on statistical expertise!  (though I will make comments if I think I can be helpful)
+  - Report some key statistics from the analysis, using **inline** code. HINT: outside of an R code chunk, use `r codehere <- "Nothing"` format.
+  
+```{r}
+
+#I am adding-up infant deaths at all ages
+  #?grep
+  #?rowsum
+
+summary(MortalitySample[,grep("IM_Deaths", names(MortalitySample))])
+
+MortalitySample$InfantDeaths <- MortalitySample$IM_Deaths1+ MortalitySample$IM_Deaths2+ MortalitySample$IM_Deaths3+ MortalitySample$IM_Deaths4
+
+summary(MortalitySample[,c(grep("IM_Deaths", names(MortalitySample)),41)])
+
+#Analysis 1: Correlation between number of deaths and number of infant deaths for the same cause, sex and country
+  #?cor.test
+
+Correlation <- cor.test(MortalitySample$Deaths1, MortalitySample$InfantDeaths)
+
+
+#Analysis 2: Use an OLS to obtain the average difference between the number of deaths of males and females by cause and country
+  #?lm
+
+Regression <- lm(Deaths1 ~ Sex, MortalitySample, subset = MortalitySample$Sex != 9)
+str(Regression)
+Regression$coefficients[2]
+str(Correlation)
+
+```
+
+The person correlation between the number of adult deaths and the number of infant death is of `r Correlation$estimate`, which is significant with a p-value of `r Correlation$p.value`.
+
+On average, `r Regression$coefficients[2]` men die more than women for each cause, and in each country.
+
+3. Get your data into "long" format, at least with some variables.  This will help with some of the following questions.
+
+```{r}
+usePackage('tidyr')
+#usePackage('reshape2')
+#library(help = reshape2)
+#str(MortalitySample)
+
+?reshape
+?aggregate
+?mapply
+
+#My data is already in long format. However, the data is currently structured in an undesirable way:
+  #Country < Year < Cause < Sex
+#I would like
+  #Country < Year; collapse(cause); wide(Sex)
+
+#I am aggregating the data using the summarize, and group,by command.
+  # I am only leaving one column with values... Having issues using the function with multiple collumns
+  #!!! #QUESTION: How to I make this command with multiple valuecolumns?
+      #reshape2/dcast package seems to be the best way. Anothes is to make a loop, or       to reshape one time for each variable, and latter bind everything.
+
+usePackage('dplyr')
+colnames(Mortality)
+collapsed <- data.frame(
+  summarize(group_by(Mortality, Country, Year, Sex), 
+            Deaths = sum(Deaths1)))
+
+#Making the data wide
+
+spreaded <- spread(collapsed, Sex, Deaths)
+
+head(spreaded)
+
+#Or usign the reshape function
+
+reshaped <- 
+  reshape(collapsed, 
+          timevar = "Sex", 
+          idvar = colnames(collapsed[,c(1:2)]), 
+          direction = "wide")
+
+reshaped$Deaths.Total <- mapply (sum, reshaped$Deaths.Male, reshaped$Deaths.Female, reshaped$Deaths.Unspecified, na.rm = TRUE)
+
+head(reshaped)
+
+#Getting the data back to long with sex (for exercise purposes; tidyr)
+spreaded <- spread(collapsed, Sex, Deaths)
+
+gathered <- gather(spreaded, Sex, Deaths, -Country, -Year)
+head(gathered)
+
+gatheredO <- gathered[order(gathered$Country, gathered$Year),]
+head(gatheredO)
+#order(gathered$Country)
+
+
+```
+
+4. Pick a single numerical variable from your data.  Use `ggplot` to plot a histogram and a density plot (separately).
+   - Try some different values for `binwidth` for the histogram.
+   - Try some different values for `adjust` for the density plot.
+
+```{r}
+usePackage('ggplot2')
+library(help = ggplot2)
+#?qplot
+#?ggplot
+
+qplot(reshaped$Deaths.Total, geom="histogram")
+
+ggplot(reshaped, aes(x = Deaths.Total)) +
+        geom_histogram(binwidth = 100000)
+
+ggplot(reshaped, aes(x = Deaths.Total)) +
+        geom_histogram(bins = 3)
+
+qplot(reshaped$Deaths.Total, geom="density")
+
+ggplot(reshaped, aes(x = Deaths.Total)) +
+        geom_density(adjust = 3)
+
+ggplot(reshaped, aes(x = Deaths.Total)) +
+        geom_density(adjust = 100)
+```
+
+5. How does the distribution look?  Try transforming the variable and try to get it to look more normal (i.e., more Gaussian).  If it already looks normal, do something to it to make it look non-normal.
+
+```{r}
+#The distribution is heavly skewed to the right. I will log it
+
+reshaped$Deaths.Log <- log(reshaped$Deaths.Total)
+
+head(reshaped)
+
+qplot(reshaped$Deaths.Log, geom="histogram")
+
+```
+
+6. Is there a factor that you can use to break up this variable into groups of observations?  If not, reshape your data so that there is, or create a factor if necessary.  Then, do the following:
+   - Plot it as a density plot, mapping `color` to the factor
+   - Same, but try using `fill` instead of `color`
+   - Same, using `linetype` instead of `color`
+   - Plot the data as a boxplot, with the factor as `x` and the numerical variable as `y`  HINT: use geom_boxplot
+
+```{r}
+#Reshape to add in (back) a factor for sex
+
+usePackage('tidyr')
+
+head(reshaped)
+
+gathered <- gather(reshaped, key = ID, value = Deaths, -Country, -Year)
+head(gathered)
+
+
+```
+
+7. Create a bar plot of the cell means of some variable. Steps:
+   - Find a numerical variable and a grouping factor (this can be the same as those chosen above).
+   - Get the mean value of the numerical variable, broken down by the factor.  
+   - Plot this new aggregated data frame, using the "bar" geom.
+   
+```{r}
+
+```
+   
+   
+8. Create a bar plot that gets means broken down by TWO grouping factors.  For example, if Factor A has levels "red" and "blue" and Factor B has levels "north" and "south", get the cell means of "red north", "red south", "blue north", and "blue south."  
+   - Use the dplyr methods to get these means into a data frame format.
+   - Use the "bar" geom, but map the two variables to different graphical dimension.  One should be the "x" value, but the other should be mapped to some other visual property.
+
+```{r}
+
+```
+
+
+9. Output all of the plots above (from problems 1-8) as a single PDF.
+
+```{r}
+
+```
+
+10. Is there a better type of visualization for your data?  What numbers would you like to be able to visualize better?  Be as explicit as possible, and write some "pseudo-code" to ilustrate what you think you would like.
+
+```{r}
+
+```
+
+
+
