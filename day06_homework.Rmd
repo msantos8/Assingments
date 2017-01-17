@@ -1,0 +1,213 @@
+---
+title: "Day 5 Homework"
+output: html_document
+---
+
+0. Reload your data, and re-use the code you already have for getting things formatted nicely (columns renamed, factors relabeled, etc.)
+
+```{r}
+usePackage <- function(p) {
+    if (!is.element(p, installed.packages()[,1]))
+        install.packages(p, dep = TRUE)
+    require(p, character.only = TRUE)
+}
+
+usePackage('dplyr')
+
+Mortality <- bind_rows("10_2" = read.csv(unz("Data/Morticd10_part2.zip","Morticd10_part2")),
+                       "10_1" = read.csv(unz("Data/Morticd10_part1.zip","Morticd10_part1")),
+                       "9" = read.csv(unz("Data/morticd9.zip","Morticd9")),
+                       "8" = read.csv(unz("Data/morticd08.zip","Morticd8")),
+                       "7" = read.csv(unz("Data/morticd07.zip","MortIcd7")),
+                       .id = "ICD")
+
+Mortality$ICD <- factor(as.factor(Mortality$ICD), c("10_2","10_1","9","8","7"))
+
+Mortality$Sex <- factor(Mortality$Sex, labels = c("Male","Female", "Unspecified"))
+
+summary(Mortality$Sex)
+
+Population <- read.csv(unzip("Data/Pop.zip"))
+
+usePackage('dplyr')
+colnames(Mortality)
+collapsed <- data.frame(
+  summarize(group_by(Mortality, Country, Year, Sex), 
+            Deaths = sum(Deaths1)))
+
+head(collapsed)
+
+```
+
+1. Pick a single numerical variable from your data.  Use `ggplot` to plot a histogram and a density plot (separately).
+   - Try some different values for `binwidth` for the histogram.
+   - Try some different values for `adjust` for the density plot.
+
+```{r}
+usePackage('ggplot2')
+
+ggplot(reshaped, aes(x = Deaths.Total)) +
+        geom_histogram()
+
+ggplot(reshaped, aes(x = Deaths.Total)) +
+        geom_histogram(binwidth = 100000)
+
+ggplot(reshaped, aes(x = Deaths.Total)) +
+        geom_histogram(bins = 3)
+
+qplot(reshaped$Deaths.Total, geom="density")
+
+ggplot(reshaped, aes(x = Deaths.Total)) +
+        geom_density(adjust = 3)
+
+ggplot(reshaped, aes(x = Deaths.Total)) +
+        geom_density(adjust = 100)
+```
+
+2. How does the distribution look?  Try transforming the variable and try to get it to look more normal (i.e., more Gaussian).  If it already looks normal, do something to it to make it look non-normal.
+
+```{r}
+#The distribution is heavly skewed to the right. I will log it
+
+collapsed$Deaths.Log <- log(collapsed$Deaths)
+
+qplot(collapsed$Deaths.Log, geom="histogram")
+
+```
+
+3. Is there a factor that you can use to break up this variable into groups of observations?  If not, reshape your data so that there is, or create a factor if necessary.  Then, do the following:
+   - Plot it as a density plot, mapping `color` to the factor
+   - Same, but try using `fill` instead of `color`
+   - Same, using `linetype` instead of `color`
+   - Plot the data as a boxplot, with the factor as `x` and the numerical variable as `y`  HINT: use geom_boxplot
+
+```{r}
+usePackage('ggplot2')
+
+head(collapsed)
+
+ggplot(collapsed, aes(x = Deaths.Log, color = Sex)) +
+        geom_density()
+
+ggplot(collapsed, aes(x = Deaths.Log)) +
+        geom_density(aes(color = Sex))
+
+ggplot(collapsed, aes(x = Deaths.Log, color = Sex)) +
+        geom_density()
+
+#Why can't I color with Year? Does it just work with factor variables?
+
+ggplot(collapsed, aes(x = Deaths.Log, color = Year)) +
+        geom_density()
+
+ggplot(collapsed, aes(x = Deaths.Log)) +
+        geom_density(aes(fill = Sex))
+
+ggplot(collapsed, aes(x = Deaths.Log)) +
+        geom_density(aes(linetype = Sex))
+
+ggplot(collapsed, aes(x = Sex, y = Deaths.Log)) +
+        geom_boxplot()
+
+```
+
+4. Create a bar plot of the cell means of some variable. Steps:
+   - Find a numerical variable and a grouping factor (this can be the same as those chosen above).
+   - Get the mean value of the numerical variable, broken down by the factor.  
+   - Plot this new aggregated data frame, using the "bar" geom.
+   
+```{r}
+#Using Deaths and Sex
+colnames(collapsed)
+
+mean <- summarize(group_by(collapsed, Sex), mean(Deaths))
+str(mean)
+
+ggplot(mean, aes(x = Sex, y = `mean(Deaths)`)) +
+        geom_bar(stat = "identity")
+
+```
+   
+5. Create a bar plot that gets means broken down by TWO grouping factors.  For example, if Factor A has levels "red" and "blue" and Factor B has levels "north" and "south", get the cell means of "red north", "red south", "blue north", and "blue south."  
+   - Use the dplyr methods to get these means into a data frame format.
+   - Use the "bar" geom, but map the two variables to different graphical dimension.  One should be the "x" value, but the other should be mapped to some other visual property.
+
+```{r}
+head(collapsed)
+
+#I am comparing 2010 and 1980, Male and Female
+
+mean2 <- summarize(group_by(collapsed[collapsed$Year == 2010 | collapsed$Year == 1980,], Sex, Year), mean(Deaths))
+str(mean2)
+
+ggplot(mean2, aes(x = Sex, y = `mean(Deaths)`, fill = as.factor(Year))) +
+        geom_bar(stat = "identity")
+
+#2010 is much smaller because of missing data.
+
+```
+
+6. Output all of the plots above (from problems 1-6) as a single PDF.
+
+```{r}
+pdf("day06_homework_plots.pdf", width = 10, height = 4)
+ggplot(collapsed, aes(x = Deaths)) +
+        geom_histogram()
+ggplot(collapsed, aes(x = Deaths)) +
+        geom_histogram(binwidth = 100000)
+ggplot(collapsed, aes(x = Deaths)) +
+        geom_histogram(bins = 3)
+qplot(collapsed$Deaths, geom="density")
+ggplot(collapsed, aes(x = Deaths)) +
+        geom_density(adjust = 3)
+ggplot(collapsed, aes(x = Deaths.Total)) +
+        geom_density(adjust = 100)
+ggplot(collapsed, aes(x = Deaths.Log, color = Sex)) +
+        geom_density()
+ggplot(collapsed, aes(x = Deaths.Log)) +
+        geom_density(aes(color = Sex))
+ggplot(collapsed, aes(x = Deaths.Log, color = Sex)) +
+        geom_density()
+ggplot(collapsed, aes(x = Deaths.Log, color = Year)) +
+        geom_density()
+ggplot(collapsed, aes(x = Deaths.Log)) +
+        geom_density(aes(fill = Sex))
+ggplot(collapsed, aes(x = Deaths.Log)) +
+        geom_density(aes(linetype = Sex))
+ggplot(collapsed, aes(x = Sex, y = Deaths.Log)) +
+        geom_boxplot()
+ggplot(mean, aes(x = Sex, y = `mean(Deaths)`)) +
+        geom_bar(stat = "identity")
+ggplot(mean2, aes(x = Sex, y = `mean(Deaths)`, fill = as.factor(Year))) +
+        geom_bar(stat = "identity")
+dev.off()
+
+```
+
+7. Is there a better type of visualization for your data?  What numbers would you like to be able to visualize better?  Be as explicit as possible, and write some "pseudo-code" to ilustrate what you think you would like.
+
+```{r}
+#I would like to see the progression of deaths over years for each individual country, like a line graph. I want to do that just with homicides later on.
+  #I did it for the US (Country Code == 2450)
+head(collapsed)
+
+ggplot(collapsed[collapsed$Country == 2450,], aes(x = Year, y = Deaths)) +
+        geom_line()
+
+ggplot(collapsed[collapsed$Country == 2450,], aes(x = Year, y = Deaths)) +
+        geom_line(aes(color = Sex))
+
+#The "bump" refers to a range of years in which deaths were being classified in according to another list. I would need to account for that.
+
+#Or this way
+mean3 <- summarize(group_by(collapsed[collapsed$Country == 2450,], Year, Sex), sum(Deaths))
+str(mean3)
+
+ggplot(mean3, aes(x = Year, y = `sum(Deaths)`)) +
+        geom_line(aes(color = Sex))
+
+
+```
+
+
+

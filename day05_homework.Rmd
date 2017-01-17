@@ -147,11 +147,12 @@ head(gatheredO)
 
 ```{r}
 usePackage('ggplot2')
-library(help = ggplot2)
+#library(help = ggplot2)
 #?qplot
 #?ggplot
 
-qplot(reshaped$Deaths.Total, geom="histogram")
+ggplot(reshaped, aes(x = Deaths.Total)) +
+        geom_histogram()
 
 ggplot(reshaped, aes(x = Deaths.Total)) +
         geom_histogram(binwidth = 100000)
@@ -197,6 +198,8 @@ head(reshaped)
 gathered <- gather(reshaped, key = ID, value = Deaths, -Country, -Year)
 head(gathered)
 
+ggplot(reshaped, aes(x = Deaths.Total)) +
+        geom_density(adjust = 3)
 
 ```
 

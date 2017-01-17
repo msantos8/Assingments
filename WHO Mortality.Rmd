@@ -18,7 +18,7 @@ usePackage <- function(p) {
 ```
 
 
-## (!Broke) Download Files
+## (!Broke, eval=False) Download Files
 URL: http://www.who.int/healthinfo/statistics/mortality_rawdata/en/
 
 ```{r, eval=FALSE}
@@ -101,6 +101,28 @@ usePackage('tidyr')
 gather
 
 ## Merge Population
+
+```{r}
+load("Data/Mortality.RData")
+load("Data/Population.RData")
+
+ls()
+str(Mortality)
+
+colnames(Population) %in% colnames(Mortality) # Returns a logical where true is if the first thing is in the second thing
+
+colnames(Population) %in% colnames(Mortality)
+
+sum(colnames(Mortality) %in% colnames(Population)) #How many trues
+
+which() # Which ones are true
+
+Merged <- merge(Mortality, Population, all = TRUE)
+
+head (Merged)
+
+```
+
 
 #Q. Why are population data missing for some countries-years and where can I find other sources of population data?
 #A. Some countries do not report population data to WHO.  Users can find population estimates from the United Nations web site http://esa.un.org/unpd/wpp
