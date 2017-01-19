@@ -1,0 +1,133 @@
+---
+title: "Day 7 Practice"
+output: html_document
+---
+
+In this practice, let's explore data on tipping, in the `tips` data frame from the `reshape2` package.
+
+0. First get a little familiar with the structure of the data, using `summary()`, `head()`, etc.  What are the numeric variables?  What are their units? What about factors? Are factor levels sensible?
+
+```{r}
+library(reshape2)
+library(tidyr)
+library(ggplot2)
+
+mytips <- tips
+head(tips)
+
+```
+
+1. Create a simple scatterplot, plotting the tip amount by the total bill.
+  - first plot the raw quantities
+  - "save" the initial simple plot as an object
+  - change the axis labels for both x and y
+  - try two different methods
+```{r}
+
+plot1 <- ggplot(mytips, aes(x = total_bill, y = tip)) +
+  geom_point()
+
+ggplot(mytips, aes(x = total_bill, y = tip)) +
+  geom_point() +
+  xlab("Total Bill") +
+  ylab("Tip Amount")
+
+ggplot(mytips, aes(x = total_bill, y = tip)) +
+  geom_point() +
+  scale_x_continuous(name = "Total Bill") +
+  scale_y_continuous(name = "Tip Amount")
+
+```
+
+2. Continue using the previous data
+  - using `scales`, plot the axes so that they follow a logarithmic pattern
+  - add "break" values every 5 dollars on the x axis, and every 2 dollars on the y axis
+  - finally, use `labels = dollar` (made available by the `scales` package) to format the axis numbers as dollars
+
+```{r}
+library(scales)
+summary(mytips$total_bill)
+
+ggplot(mytips, aes(x = total_bill, y = tip)) +
+  geom_point() +
+  scale_x_log10(name = "Total Bill") +
+  scale_y_continuous(name = "Tip Amount")
+
+ggplot(mytips, aes(x = total_bill, y = tip)) +
+  geom_point() +
+  scale_x_log10(name = "Total Bill", breaks = seq(0, 60, 5), labels = dollar) +
+  scale_y_continuous(name = "Tip Amount", breaks = seq(0, 10, 2), labels = dollar)
+
+```
+
+3. Continue to build off of the final scatterplot in the previous problem (hint: you may need to change the plot object, in order to make the following changes)
+  - map gender to the color of the points
+  - change the color values, using both the "brewer" and "manual" methods
+  - add regression lines (regular linear regression), which also break down by gender
+  - also try a loess smoother instead of regression lines
+  - finally, change the overall "theme" to either the "classic", "minimal", or "bw" theme
+
+```{r}
+head(tips)
+
+ggplot(mytips, aes(x = total_bill, y = tip, color = sex)) +
+  geom_point() +
+  scale_x_log10(name = "Total Bill", breaks = seq(0, 60, 5), labels = dollar) +
+  scale_y_continuous(name = "Tip Amount", breaks = seq(0, 10, 2), labels = dollar) +
+  geom_smooth(method = lm)
+
+```
+
+
+4. Now let's modify the legend for the `sex` variable, building off off the scatterplot with linear regression lines
+  - using the appropriate `scale` function, change the name of the legend to "Gender"
+  - change the location of the legend with the `theme()` function
+  - also using the "legend.position" argument, remove the legend completely
+  - finally, put the legend back to the default position, but change the levels, such that Male is given as the first level
+  
+```{r}
+ggplot(mytips, aes(x = total_bill, y = tip, color = sex)) +
+  geom_point() +
+  scale_x_log10(name = "Total Bill", breaks = seq(0, 60, 5), labels = dollar) +
+  scale_y_continuous(name = "Tip Amount", breaks = seq(0, 10, 2), labels = dollar) +
+  geom_smooth(method = lm) +
+  scale_fill_continuous(name = "Gender") +
+  theme(legend.position = "bottom")
+
+```
+
+5. Let's explore how this pattern might vary for different days of the week.
+  - use faceting to create a separate plot for each day
+  - try both the "wrap" and "grid" faceting functions
+  - make a change so that the labels on the top of the facets give the full day name (e.g., "Friday", not "Fri"), and they are ordered from Thursday to Sunday
+  
+```{r}
+head(mytips)
+
+ggplot(mytips, aes(x = total_bill, y = tip, color = sex)) +
+  geom_point() +
+  scale_x_log10(name = "Total Bill", breaks = seq(0, 60, 5), labels = dollar) +
+  scale_y_continuous(name = "Tip Amount", breaks = seq(0, 10, 2), labels = dollar) +
+  scale_fill_continuous(name = "Gender") +
+  theme(legend.position = "bottom") +
+  facet_grid(~ day)
+
+```
+
+6. Now let's look at adding information about the size of the party to the plot
+  - first leave off the regression lines, to make it easier to see
+  - map party size to the size of the points
+  - look at both an aggregate plot and plots faceted by day
+  - now add back the regression lines, but only plot a single regression line (i.e., not broken down by gender), remove the confidence interval (hint: look at the arguments for `geom_smooth()`), and make the line a dashed black line
+  
+```{r}
+ggplot(mytips, aes(x = total_bill, y = tip, color = sex)) +
+  geom_point() +
+  scale_x_log10(name = "Total Bill", breaks = seq(0, 60, 5), labels = dollar) +
+  scale_y_continuous(name = "Tip Amount", breaks = seq(0, 10, 2), labels = dollar) +
+  geom_smooth(method = lm) +
+  scale_fill_continuous(name = "Gender") +
+  theme(legend.position = "bottom")
+
+```
+

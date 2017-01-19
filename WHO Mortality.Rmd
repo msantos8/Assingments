@@ -7,8 +7,11 @@ output: html_document
 ## Setup
 
 ```{r}
-# Function
-  #Library a package, and installs the package if necessary
+#Clear the workspace
+rm(list = ls())
+
+# Function - usePackage()
+  #Library a package, and installs the package if necessary. Use this function instead of "library()"
 usePackage <- function(p) {
     if (!is.element(p, installed.packages()[,1]))
         install.packages(p, dep = TRUE)
@@ -18,7 +21,7 @@ usePackage <- function(p) {
 ```
 
 
-## (!Broke, eval=False) Download Files
+## Download Files (Broke; Eval = False)
 URL: http://www.who.int/healthinfo/statistics/mortality_rawdata/en/
 
 ```{r, eval=FALSE}
@@ -45,7 +48,11 @@ unlink(temp)
 ```
 
 
+ 
+
 ## Extract Data
+Extracts the Mortality and Population databases from the files downloaded from the WHO Mortality Database Website.
+URL: http://www.who.int/healthinfo/statistics/mortality_rawdata/en/
 
 ```{r}
 usePackage('dplyr')
@@ -64,23 +71,191 @@ Population <- read.csv(unzip("Data/Pop.zip"))
 save (Mortality, file = "Data/Mortality.RData")
 save(Population, file = "Data/Population.RData")
 
-load("Data/Mortality.RData")
-load("Data/Population.RData")
 ```
 
-## Homicides
--Remove all non-homicide causes
+!!!!MERGE FIRST!!!
+
+## Homicide
+Removes all non-homicide causes of deaths from the Mortality database, and generates the Homicide database
+
+(Work Notes) Still needs verification.
+
+```{r}
+Homicide.Cause <- Mortality[c(which(Mortality$List=="07A" & Mortality$Cause=="A149"),
+                        which(Mortality$List=="07B" & Mortality$Cause=="B050"),
+                        which(Mortality$List=="08A" & Mortality$Cause=="A148"),
+                        which(Mortality$List=="08B" & Mortality$Cause=="B050"),
+                        which(Mortality$List=="09A" & Mortality$Cause=="B55"),
+                        which(Mortality$List=="09B" & Mortality$Cause=="B55"),
+                        which(Mortality$List=="09C" & Mortality$Cause=="C103"),
+                        which(Mortality$List=="09N" & (Mortality$Cause=="B55" | Mortality$Cause=="CH17")),
+                        which(Mortality$List=="101" & (Mortality$Cause=="1102" | Mortality$Cause=="1103")),
+                        which(Mortality$List=="103" & (Mortality$Cause=="X85" | Mortality$Cause=="X86" | 
+                                                    Mortality$Cause=="X87" | Mortality$Cause=="X88" | 
+                                                    Mortality$Cause=="X89" | Mortality$Cause=="X90" | 
+                                                    Mortality$Cause=="X91" | Mortality$Cause=="X92" | 
+                                                    Mortality$Cause=="X93" | Mortality$Cause=="X94" | 
+                                                    Mortality$Cause=="X95" | Mortality$Cause=="X96" | 
+                                                    Mortality$Cause=="X97" | Mortality$Cause=="X98" | 
+                                                    Mortality$Cause=="X99" | Mortality$Cause=="Y00" | 
+                                                    Mortality$Cause=="Y01" | Mortality$Cause=="Y02" | 
+                                                    Mortality$Cause=="Y03" | Mortality$Cause=="Y04" | 
+                                                    Mortality$Cause=="Y05" | Mortality$Cause=="Y06" | 
+                                                    Mortality$Cause=="Y07" | Mortality$Cause=="Y08" | 
+                                                    Mortality$Cause=="Y09")),
+                        which(Mortality$List=="104" & (Mortality$Cause=="X850" | Mortality$Cause=="X851" | 
+                                                    Mortality$Cause=="X852"	| Mortality$Cause=="X853"	| 
+                                                    Mortality$Cause=="X854" | Mortality$Cause=="X855" | 
+                                                    Mortality$Cause=="X856" | Mortality$Cause=="X857" | 
+                                                    Mortality$Cause=="X858" | Mortality$Cause=="X859" | 
+                                                    Mortality$Cause=="X860" | Mortality$Cause=="X861" | 
+                                                    Mortality$Cause=="X862" | Mortality$Cause=="X864" | 
+                                                    Mortality$Cause=="X865" | Mortality$Cause=="X866" | 
+                                                    Mortality$Cause=="X868" | Mortality$Cause=="X869" | 
+                                                    Mortality$Cause=="X870" | Mortality$Cause=="X871" | 
+                                                    Mortality$Cause=="X872" | Mortality$Cause=="X874" | 
+                                                    Mortality$Cause=="X875" | Mortality$Cause=="X876" | 
+                                                    Mortality$Cause=="X877" | Mortality$Cause=="X878" | 
+                                                    Mortality$Cause=="X879" | Mortality$Cause=="X880" | 
+                                                    Mortality$Cause=="X881" | Mortality$Cause=="X882" | 
+                                                    Mortality$Cause=="X883" | Mortality$Cause=="X884" | 
+                                                    Mortality$Cause=="X885" | Mortality$Cause=="X886" | 
+                                                    Mortality$Cause=="X887" | Mortality$Cause=="X888" | 
+                                                    Mortality$Cause=="X889" | Mortality$Cause=="X890" | 
+                                                    Mortality$Cause=="X891" | Mortality$Cause=="X892" | 
+                                                    Mortality$Cause=="X893" | Mortality$Cause=="X894" | 
+                                                    Mortality$Cause=="X895" | Mortality$Cause=="X896" | 
+                                                    Mortality$Cause=="X897" | Mortality$Cause=="X898" | 
+                                                    Mortality$Cause=="X899" | Mortality$Cause=="X900" | 
+                                                    Mortality$Cause=="X901" | Mortality$Cause=="X902" | 
+                                                    Mortality$Cause=="X903" | Mortality$Cause=="X904" | 
+                                                    Mortality$Cause=="X905" | Mortality$Cause=="X906" | 
+                                                    Mortality$Cause=="X907" | Mortality$Cause=="X908" | 
+                                                    Mortality$Cause=="X909" | Mortality$Cause=="X910" | 
+                                                    Mortality$Cause=="X911" | Mortality$Cause=="X912" | 
+                                                    Mortality$Cause=="X913" | Mortality$Cause=="X914" | 
+                                                    Mortality$Cause=="X915" | Mortality$Cause=="X916" | 
+                                                    Mortality$Cause=="X917" | Mortality$Cause=="X918" | 
+                                                    Mortality$Cause=="X919" | Mortality$Cause=="X920" | 
+                                                    Mortality$Cause=="X921" | Mortality$Cause=="X922" | 
+                                                    Mortality$Cause=="X923" | Mortality$Cause=="X924" | 
+                                                    Mortality$Cause=="X925" | Mortality$Cause=="X926" | 
+                                                    Mortality$Cause=="X927" | Mortality$Cause=="X928" | 
+                                                    Mortality$Cause=="X929" | Mortality$Cause=="X930" | 
+                                                    Mortality$Cause=="X931" | Mortality$Cause=="X932" | 
+                                                    Mortality$Cause=="X933" | Mortality$Cause=="X934" | 
+                                                    Mortality$Cause=="X935" | Mortality$Cause=="X936" | 
+                                                    Mortality$Cause=="X937" | Mortality$Cause=="X938" | 
+                                                    Mortality$Cause=="X939" | Mortality$Cause=="X940" | 
+                                                    Mortality$Cause=="X941" | Mortality$Cause=="X942" | 
+                                                    Mortality$Cause=="X943" | Mortality$Cause=="X944" | 
+                                                    Mortality$Cause=="X945" | Mortality$Cause=="X946" | 
+                                                    Mortality$Cause=="X947" | Mortality$Cause=="X948" | 
+                                                    Mortality$Cause=="X949" | Mortality$Cause=="X950" | 
+                                                    Mortality$Cause=="X951" | Mortality$Cause=="X952" | 
+                                                    Mortality$Cause=="X953" | Mortality$Cause=="X954" | 
+                                                    Mortality$Cause=="X955" | Mortality$Cause=="X956" | 
+                                                    Mortality$Cause=="X957" | Mortality$Cause=="X958" | 
+                                                    Mortality$Cause=="X959" | Mortality$Cause=="X960" | 
+                                                    Mortality$Cause=="X961" | Mortality$Cause=="X962" | 
+                                                    Mortality$Cause=="X963" | Mortality$Cause=="X964" | 
+                                                    Mortality$Cause=="X965" | Mortality$Cause=="X966" | 
+                                                    Mortality$Cause=="X967" | Mortality$Cause=="X968" | 
+                                                    Mortality$Cause=="X969" | Mortality$Cause=="X970" | 
+                                                    Mortality$Cause=="X971" | Mortality$Cause=="X972" | 
+                                                    Mortality$Cause=="X973" | Mortality$Cause=="X974" | 
+                                                    Mortality$Cause=="X975" | Mortality$Cause=="X976" | 
+                                                    Mortality$Cause=="X977" | Mortality$Cause=="X978" | 
+                                                    Mortality$Cause=="X979" | Mortality$Cause=="X980" | 
+                                                    Mortality$Cause=="X981" | Mortality$Cause=="X982" | 
+                                                    Mortality$Cause=="X983" | Mortality$Cause=="X984" | 
+                                                    Mortality$Cause=="X985" | Mortality$Cause=="X987" | 
+                                                    Mortality$Cause=="X988" | Mortality$Cause=="X989" | 
+                                                    Mortality$Cause=="X990" | Mortality$Cause=="X991" | 
+                                                    Mortality$Cause=="X992" | Mortality$Cause=="X993" | 
+                                                    Mortality$Cause=="X994" | Mortality$Cause=="X995" | 
+                                                    Mortality$Cause=="X996" | Mortality$Cause=="X997" | 
+                                                    Mortality$Cause=="X998" | Mortality$Cause=="X999" | 
+                                                    Mortality$Cause=="Y000" | Mortality$Cause=="Y001" | 
+                                                    Mortality$Cause=="Y002" | Mortality$Cause=="Y003" | 
+                                                    Mortality$Cause=="Y004" | Mortality$Cause=="Y005" | 
+                                                    Mortality$Cause=="Y006" | Mortality$Cause=="Y007" | 
+                                                    Mortality$Cause=="Y008" | Mortality$Cause=="Y009" | 
+                                                    Mortality$Cause=="Y010" | Mortality$Cause=="Y011" | 
+                                                    Mortality$Cause=="Y012" | Mortality$Cause=="Y013" | 
+                                                    Mortality$Cause=="Y014" | Mortality$Cause=="Y015" | 
+                                                    Mortality$Cause=="Y016" | Mortality$Cause=="Y017" | 
+                                                    Mortality$Cause=="Y018" | Mortality$Cause=="Y019" | 
+                                                    Mortality$Cause=="Y020" | Mortality$Cause=="Y021" | 
+                                                    Mortality$Cause=="Y022" | Mortality$Cause=="Y023" | 
+                                                    Mortality$Cause=="Y024" | Mortality$Cause=="Y025" | 
+                                                    Mortality$Cause=="Y026" | Mortality$Cause=="Y027" | 
+                                                    Mortality$Cause=="Y028" | Mortality$Cause=="Y029" | 
+                                                    Mortality$Cause=="Y030" | Mortality$Cause=="Y031" | 
+                                                    Mortality$Cause=="Y032" | Mortality$Cause=="Y033" | 
+                                                    Mortality$Cause=="Y034" | Mortality$Cause=="Y035" | 
+                                                    Mortality$Cause=="Y036" | Mortality$Cause=="Y037" | 
+                                                    Mortality$Cause=="Y038" | Mortality$Cause=="Y039" | 
+                                                    Mortality$Cause=="Y040" | Mortality$Cause=="Y041" | 
+                                                    Mortality$Cause=="Y042" | Mortality$Cause=="Y043" | 
+                                                    Mortality$Cause=="Y044" | Mortality$Cause=="Y045" | 
+                                                    Mortality$Cause=="Y046" | Mortality$Cause=="Y047" | 
+                                                    Mortality$Cause=="Y048" | Mortality$Cause=="Y049" | 
+                                                    Mortality$Cause=="Y050" | Mortality$Cause=="Y051" | 
+                                                    Mortality$Cause=="Y052" | Mortality$Cause=="Y053" | 
+                                                    Mortality$Cause=="Y054" | Mortality$Cause=="Y055" | 
+                                                    Mortality$Cause=="Y056" | Mortality$Cause=="Y057" | 
+                                                    Mortality$Cause=="Y058" | Mortality$Cause=="Y059" | 
+                                                    Mortality$Cause=="Y060" | Mortality$Cause=="Y061" | 
+                                                    Mortality$Cause=="Y062" | Mortality$Cause=="Y068" | 
+                                                    Mortality$Cause=="Y069" | Mortality$Cause=="Y070" | 
+                                                    Mortality$Cause=="Y071" | Mortality$Cause=="Y072" | 
+                                                    Mortality$Cause=="Y073" | Mortality$Cause=="Y078" | 
+                                                    Mortality$Cause=="Y079" | Mortality$Cause=="Y080" | 
+                                                    Mortality$Cause=="Y081" | Mortality$Cause=="Y082" | 
+                                                    Mortality$Cause=="Y083" | Mortality$Cause=="Y084" | 
+                                                    Mortality$Cause=="Y085" | Mortality$Cause=="Y086" | 
+                                                    Mortality$Cause=="Y087" | Mortality$Cause=="Y088" | 
+                                                    Mortality$Cause=="Y089" | Mortality$Cause=="Y090" | 
+                                                    Mortality$Cause=="Y091" | Mortality$Cause=="Y092" | 
+                                                    Mortality$Cause=="Y093" | Mortality$Cause=="Y094" | 
+                                                    Mortality$Cause=="Y095" | Mortality$Cause=="Y096" | 
+                                                    Mortality$Cause=="Y097" | Mortality$Cause=="Y098" | 
+                                                    Mortality$Cause=="Y099" | Mortality$Cause=="Y871")),
+                        which(Mortality$List=="10M" & (Mortality$Cause=="Y871" | Mortality$Cause=="X85" | 
+                                                    Mortality$Cause=="X86" | Mortality$Cause=="X87" | 
+                                                    Mortality$Cause=="X88" | Mortality$Cause=="X89" | 
+                                                    Mortality$Cause=="X90" | Mortality$Cause=="X91" | 
+                                                    Mortality$Cause=="X92" | Mortality$Cause=="X93" | 
+                                                    Mortality$Cause=="X94" | Mortality$Cause=="X95" | 
+                                                    Mortality$Cause=="X96" | Mortality$Cause=="X97" | 
+                                                    Mortality$Cause=="Y02" | Mortality$Cause=="Y03" | 
+                                                    Mortality$Cause=="Y04" | Mortality$Cause=="Y05" | 
+                                                    Mortality$Cause=="Y06" | Mortality$Cause=="Y07" | 
+                                                    Mortality$Cause=="Y08" | Mortality$Cause=="Y09")),
+                        which(Mortality$List=="UE1" & Mortality$Cause=="UE64")), ]
+
+save (Homicide.Cause, file = "Data/Homicide.Cause.RData")
+
+```
+
 
 ## Collapse
--Collapse all causes of death
+Aggregates all causes of homicides in a single number by country, year and sex
 
 ```{r}
 usePackage('dplyr')
 
-collapsed <- data.frame(
-  summarize(group_by(Mortality, Country, Year, Sex), 
+head(Homicide.Cause)
+
+aggregate(Homicide.Cause$, by = list(Homicide.Cause$Country, Homicide.Cause$Year, Homicide.Cause$Sex), FUN = sum)
+
+
+Homicide <- data.frame(
+  summarize(group_by(Homicide.Cause, Country, Year, Sex), 
             Deaths = sum(Deaths1)))
 
+head(Homicide)
 ```
 
 ## Reshape
@@ -117,7 +292,7 @@ sum(colnames(Mortality) %in% colnames(Population)) #How many trues
 
 which() # Which ones are true
 
-Merged <- merge(Mortality, Population, all = TRUE)
+Merged <- merge(Homicide, Population, all = TRUE)
 
 head (Merged)
 
@@ -126,4 +301,13 @@ head (Merged)
 
 #Q. Why are population data missing for some countries-years and where can I find other sources of population data?
 #A. Some countries do not report population data to WHO.  Users can find population estimates from the United Nations web site http://esa.un.org/unpd/wpp
+
+## Country-level Trends
+
+```{r}
+library(ggplot2)
+
+facet_grid(~ Country)
+
+```
 

@@ -1,0 +1,167 @@
+---
+title: "Day 7 Homework"
+output: html_document
+---
+
+Find three relationships in your data.  For each relationship, do the following:
+
+1. Verbally articulate the relationship you want to examine.
+
+Relationship #1 
+What is the relationship between Homicide Rates and Time
+
+Relationship #2 
+What is the relationship between the Percentage of the Population between 15 and 24 years and time
+
+Relationship #2 
+What is the relationship between Homicide Rates and the Percentage of the Population between 15 and 24 years
+
+
+2. Verbally identify what variables you want to map to each graphical dimension.
+
+Relationship #1 - HomicideRate & Year
+Relationship #2 - Pop15_24 & Time
+Relationship #3 - HomicideRate & Pop15_24
+
+3. Reshape your data as needed.
+
+```{r}
+library(dplyr)
+library(ggplot2)
+
+#I am loading a dataset that I am currently formatting, that includes only Homicides. The code for this data is in the "WHO Mortality.Rmd" file
+load("data/Homicide.Cause.RData")
+
+#The unit of analysis is the number of deaths by cause, sex, year and country. I am collapsing it to country and year. I am just keepign some variables
+Homicide.Sum <- data.frame(
+  summarize(group_by(Homicide.Cause, Country, Year), 
+            Homicides = sum(Deaths1)))
+
+head(Population)
+Population.Sum <- data.frame(
+  summarize(group_by(Population, Country, Year), 
+            Population = sum(Pop1),
+            Pop15_24 = sum(Pop9, Pop10)))
+
+#Merging Population Data
+Homicide.Pop <- merge(Homicide.Sum, Population.Sum, all = TRUE)
+
+#Generate New Variables
+
+Homicide.Pop$HomicideRate <- (Homicide.Pop$Homicides/Homicide.Pop$Population) * 100000
+
+Homicide.Pop$Per15_24 <- (Homicide.Pop$Pop15_24/Homicide.Pop$Population) * 100
+
+head(Homicide.Pop)
+
+```
+
+
+4. Use ggplot2 to create your graphs.
+
+Relationship #1 - HomicideRate & Year
+
+```{r}
+mean1 <- summarize(group_by(Homicide.Pop, Year), mean(HomicideRate, na.rm=TRUE))
+
+ggplot(mean1, aes(Year, `mean(HomicideRate, na.rm = TRUE)`)) +
+  geom_line()
+
+```
+
+Relationship #2 - Per15_24 & Time
+
+```{r}
+mean2 <- summarize(group_by(Homicide.Pop, Year), mean(Per15_24, na.rm=TRUE))
+mean2
+
+ggplot(mean2, aes(Year, `mean(Per15_24, na.rm = TRUE)`)) +
+  geom_line()
+
+```
+
+
+Relationship #3 - HomicideRate & Pop15_24
+
+```{r}
+ggplot(Homicide.Pop, aes(Per15_24, HomicideRate)) +
+  geom_point()
+
+mean3 <- merge(mean1, mean2, na.rm=TRUE)
+
+ggplot(mean3, aes(Year)) +
+  geom_line(aes(y = `mean(Per15_24, na.rm = TRUE)`)) +
+  geom_line(aes(y = `mean(HomicideRate, na.rm = TRUE)`))
+
+
+```
+
+
+5. Fiddle with colors, axis labels, themes, etc. until the plot looks "publication ready" to you.  Try to change at least one thing per plot.
+
+```{r}
+library(scales)
+
+#Scatter-Plot
+ggplot(Homicide.Pop, aes(Per15_24, HomicideRate)) +
+  geom_point(alpha = .5) +
+  geom_smooth(method = lm, color = "red") +
+  theme_bw () +
+  theme(text = element_text(family = "serif", size = 12),
+        panel.border = element_blank()) +
+  scale_y_log10(breaks = seq(0, 500, 50)) +
+  xlab("Percent 15 to 24") +
+  ylab("Homicide Rate")
+
+#Line Graph
+#Selecting Just the United States
+Homicide.Pop[Homicide.Pop$Country == 2450,]
+
+#Question: I have been tying to plot these two line graphs with two y scales, one in the right, but I could not find a way to do that.
+
+ggplot(Homicide.Pop[Homicide.Pop$Country == 2450,], aes(Year)) +
+  geom_line(aes(y = HomicideRate)) +
+  geom_line(aes(y = Per15_24))
+
+ggplot(Homicide.Pop[Homicide.Pop$Country == 2450,], aes(x = Year)) +
+  geom_line(aes(y = HomicideRate, color = "red"), size = 1.2) +
+  geom_line(aes(y = Per15_24, color = "blue"), size = 1.2) +
+  ylab("Homicide Rate                               Percent 15 to 24") +
+  theme_bw () +
+  theme(legend.position = "none", 
+        text = element_text(family = "serif", size = 12),
+        panel.border = element_blank())
+
+#Question: Use annotate based on a variable. Mark the ICD version of each piece of the series
+
+
+```
+
+
+6. Save all plots to a format that you could use in a paper.  HINT: PNG works well for pasting into Word documents.
+
+```{r}
+png("day07_homework_dots.png")
+ggplot(Homicide.Pop, aes(Per15_24, HomicideRate)) +
+  geom_point(alpha = .5) +
+  geom_smooth(method = lm, color = "red") +
+  theme_bw () +
+  theme(text = element_text(family = "serif", size = 12),
+        panel.border = element_blank()) +
+  scale_y_log10(breaks = seq(0, 500, 50)) +
+  xlab("Percent 15 to 24") +
+  ylab("Homicide Rate")
+dev.off()
+
+png("day07_homework_line.png")
+ggplot(Homicide.Pop[Homicide.Pop$Country == 2450,], aes(x = Year)) +
+  geom_line(aes(y = HomicideRate, color = "red"), size = 1.2) +
+  geom_line(aes(y = Per15_24, color = "blue"), size = 1.2) +
+  ylab("Homicide Rate                               Percent 15 to 24") +
+  theme_bw () +
+  theme(legend.position = "none", 
+        text = element_text(family = "serif", size = 12),
+        panel.border = element_blank())
+dev.off()
+```
+
