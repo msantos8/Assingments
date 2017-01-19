@@ -302,6 +302,14 @@ head (Merged)
 #Q. Why are population data missing for some countries-years and where can I find other sources of population data?
 #A. Some countries do not report population data to WHO.  Users can find population estimates from the United Nations web site http://esa.un.org/unpd/wpp
 
+## Labels
+Label countries in the data
+
+```{r}
+
+```
+
+
 ## Country-level Trends
 
 ```{r}

@@ -54,6 +54,9 @@ Homicide.Pop$Per15_24 <- (Homicide.Pop$Pop15_24/Homicide.Pop$Population) * 100
 
 head(Homicide.Pop)
 
+save(Homicide.Pop, file = "Data/Homicide.Pop.RData")
+
+
 ```
 
 

@@ -1,0 +1,114 @@
+---
+title: "Day 8 Practice"
+output: html_document
+---
+
+1. Write an if...else statement to test whether a string matches "right", and if so, print "you win!", but if the string matches "wrong", print "you lose!", and if it's neither, print "the result is inconclusive".
+
+```{r}
+
+string <- "none"
+
+if (string == "right") {
+  print("you win!")
+} else if (string == "wrong") {
+  print("you lose!")
+} else {
+  print ("the result is inconclusive")
+}
+
+```
+
+2. Make a copy of the iris data. Use an ifelse statement to create a new column, where:
+  - if the value of Sepal.Length is less than 5, the new column should have a value of "low"
+  - if the value of Sepal.Length is greater than 6, it should have a value of "high"
+  - and if it's between 5 and 6 (inclusive), it should have a value of "mid"
+  - make a plot in ggplot2 to confirm that you did this right
+  
+```{r}
+
+myiris <- iris
+
+myiris$High_Low <- 
+  ifelse(myiris$Sepal.Length < 5, "low", 
+  ifelse(myiris$Sepal.Length > 6, "high", "mid"))
+
+
+library(ggplot2)
+
+ggplot(myiris, (aes(x = Sepal.Length , y = High_Low))) +
+  geom_point()
+
+
+
+```
+
+3. Consider the iris data again.
+  - make a scatterplot of Sepal.Length by Sepal.Width
+  - facet the plot by Species
+  - using a loop, loop through species and create three separate plots
+    - in each plot, display the species as the plot title 
+      (check `?labs` for how to set the plot title in a convenient way)
+    - use pdf() and dev.off() so that the three plots get written out to a file
+    
+```{r}
+head(myiris)
+
+ggplot(myiris, aes(x = Sepal.Length, y = Sepal.Width)) +
+  geom_point() +
+  facet_grid (~ Species)
+
+pdf("class stuff")
+for (i in unique(myiris$Species)) {
+  print(ggplot(myiris[myiris$Species == i, ], aes(x = Sepal.Length, y = Sepal.Width)) +
+  geom_point())
+  labs(title = i)
+} 
+dev.off()
+
+# get() # Pull the object that has that string name
+
+
+```
+
+4. Similar to what we did with the correlation power simulations, write code (including a loop) that creates a power simulation for comparing the means of two normally-distributed sample.
+  - compare the sample with both `t.test()` and `wilcox.test()`
+  - put the p-values from both tests in each simulation result
+  - compare the power of the t-test vs. the power of the Wilcoxon test
+  
+```{r}
+x <- rnorm(1000, mean = 5, sd = 2)
+summary(x)
+sd(x)
+
+y <- rnorm(1000, mean = 10, sd = 2)
+summary(y)
+sd(y)
+
+t.test(x, y)
+
+summary$Mean(rnorm(100, mean = 5, sd = 2))
+
+str(mean(rnorm(100, mean = 5, sd = 2)))
+
+for ttest in
+
+t.test(samples.x[1,], samples.y[1,])
+
+for (i in 1:100) {
+  samples.x <- data.frame(i, rnorm(i, mean = 5, sd = 2))
+}
+
+samples.x
+
+samples.x
+
+for (j in 1:100) {
+  samples.y <- rnorm(j, mean = 10, sd = 2)
+}
+
+
+
+
+```
+

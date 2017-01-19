@@ -1,0 +1,127 @@
+---
+title: "Day 8 Homework"
+output: html_document
+---
+
+Find two repetitive things that you would like to be able to do with your data.  This can be something having to do with coding variables, or saving plots, or running an analysis multiple times on different subsets, etc. etc.  Just try to find something where you would normally need to "copy and paste" sections of code, varying only one or two things.  Figure out how to use a loop to accomplish this.  
+
+For BOTH of these things, take the following steps:
+
+1. Articulate what you want to do (verbally)
+Thing # 1 - The correlation between the percent of the population 15 to 24 and homicides for several countries
+
+Thing # 2 - Graph the relationship between age composition and homicides for several countries
+
+2. Give some code that illustrates the "copy and paste" method.  This can just show a couple of steps.  That is, if you would be running through a bunch of iterations, just copy and paste a couple of times, not everything.
+
+```{r}
+load("Data/Homicide.Pop.RData")
+
+head(Homicide.Pop)
+
+#Generating a new variable with the countries names
+
+Codes <- read.csv(unz("Data/country_codes.zip","country_codes"))
+head(Codes)
+
+Homicide.Pop$Name <- factor(Homicide.Pop$Country, levels = Codes$country, labels = Codes$name)
+
+unique(Homicide.Pop$Name)
+
+#Example with the United States of America (2450), Brazil (2070), South Africa (1430), Finland (4070)
+
+#Thing # 1
+cor.test(Homicide.Pop$HomicideRate[which(Homicide.Pop$Country == 2450)], Homicide.Pop$Per15_24[which(Homicide.Pop$Country == 2450)])
+
+cor.test(Homicide.Pop$HomicideRate[which(Homicide.Pop$Country == 2070)], Homicide.Pop$Per15_24[which(Homicide.Pop$Country == 2070)])
+
+cor.test(Homicide.Pop$HomicideRate[which(Homicide.Pop$Country == 1430)], Homicide.Pop$Per15_24[which(Homicide.Pop$Country == 1430)])
+
+cor.test(Homicide.Pop$HomicideRate[which(Homicide.Pop$Country == 4070)], Homicide.Pop$Per15_24[which(Homicide.Pop$Country == 4070)])
+
+
+#Thing # 2
+ggplot(Homicide.Pop[Homicide.Pop$Country == 2450,], aes(Per15_24, HomicideRate)) +
+  geom_point(alpha = .5, size = 3) +
+  geom_smooth(method = lm, color = "red") +
+  theme_bw () +
+  theme(text = element_text(family = "serif", size = 12),
+        panel.border = element_blank()) +
+  xlab("Percent 15 to 24") +
+  ylab("Homicide Rate")
+
+ggplot(Homicide.Pop[Homicide.Pop$Country == 2070,], aes(Per15_24, HomicideRate)) +
+  geom_point(alpha = .5, size = 3) +
+  geom_smooth(method = lm, color = "red") +
+  theme_bw () +
+  theme(text = element_text(family = "serif", size = 12),
+        panel.border = element_blank()) +
+  xlab("Percent 15 to 24") +
+  ylab("Homicide Rate")
+
+ggplot(Homicide.Pop[Homicide.Pop$Country == 1430,], aes(Per15_24, HomicideRate)) +
+  geom_point(alpha = .5, size = 3) +
+  geom_smooth(method = lm, color = "red") +
+  theme_bw () +
+  theme(text = element_text(family = "serif", size = 12),
+        panel.border = element_blank()) +
+  xlab("Percent 15 to 24") +
+  ylab("Homicide Rate")
+
+ggplot(Homicide.Pop[Homicide.Pop$Country == 4070,], aes(Per15_24, HomicideRate)) +
+  geom_point(alpha = .5, size = 3) +
+  geom_smooth(method = lm, color = "red") +
+  theme_bw () +
+  theme(text = element_text(family = "serif", size = 12),
+        panel.border = element_blank()) +
+  xlab("Percent 15 to 24") +
+  ylab("Homicide Rate")
+
+```
+
+
+
+3. Work this code into a loop format, so that no copy & paste is neccesary.  You will need to set up a "counter" variable that cycles through various values (which do not have to be numeric), changing with every pass through the loop.  But you may also need to make other changes to your code to accommodate the loop.
+
+As usual, send me your .Rmd file with any data I need to replicate your results.
+
+```{r}
+#Thing #1 
+
+for (i in unique(Homicide.Pop$Country)) {
+  cor.test(Homicide.Pop$HomicideRate[which(Homicide.Pop$Country == i)],
+           Homicide.Pop$Per15_24[which(Homicide.Pop$Country == i)])
+}
+
+# I am hanving issues with NA, some countries have no values of either homicide, or population. I am using a modified solution that I found online prevent errors from stopping the look
+
+for (i in unique(Homicide.Pop$Country)) {
+        print(paste("For Country =", unique(Homicide.Pop$Name[Homicide.Pop$Country == i])))
+  tryCatch({
+    print(cor.test(Homicide.Pop$HomicideRate[which(Homicide.Pop$Country == i)],
+                   Homicide.Pop$Per15_24[which(Homicide.Pop$Country == i)]))
+  }, error=function(e){cat(paste("ERROR in Country =", unique(Homicide.Pop$Name[Homicide.Pop$Country == i])),conditionMessage(e), "\n")})
+}
+
+
+#Thing #2 - I saved everything in a pdf
+pdf("day08_homework_plots.pdf")
+for (i in unique(Homicide.Pop$Country)) {
+        print(paste("For Country =", unique(Homicide.Pop$Name[Homicide.Pop$Country == i])))
+  tryCatch({
+  print(ggplot(Homicide.Pop[Homicide.Pop$Country == i,], aes(Per15_24, HomicideRate)) +
+  geom_point(alpha = .5, size = 3) +
+  ggtitle(paste("Homicide Rate and Percent 15 to 24 for Country", 
+                unique(Homicide.Pop$Name[Homicide.Pop$Country == i]))) +
+  geom_smooth(method = lm, color = "red") +
+  theme_bw () +
+  theme(text = element_text(family = "serif", size = 12),
+        panel.border = element_blank()) +
+  xlab("Percent 15 to 24") +
+  ylab("Homicide Rate"))
+  }, error=function(e){cat(paste("ERROR in Country =", unique(Homicide.Pop$Name[Homicide.Pop$Country == i])),conditionMessage(e), "\n")})
+}
+dev.off()
+
+```
+
