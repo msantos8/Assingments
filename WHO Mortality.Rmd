@@ -1,21 +1,22 @@
 ---
 title: "WHO Mortality"
 author: "Mateus Renno Santos"
-date: "January 12, 2017"
+date: "January 21, 2017"
 output: html_document
 ---
 ## Setup
+Clean the workspace, and installs the 'usePackage' function.
 
-```{r}
+```{r Setup}
 #Clear the workspace
 rm(list = ls())
 
 # Function - usePackage()
   #Library a package, and installs the package if necessary. Use this function instead of "library()"
-usePackage <- function(p) {
-    if (!is.element(p, installed.packages()[,1]))
-        install.packages(p, dep = TRUE)
-    require(p, character.only = TRUE)
+usePackage <- function(x) {
+    if (!is.element(x, installed.packages()[,1]))
+        install.packages(x, dep = TRUE)
+    require(x, character.only = TRUE)
 }
 
 ```
@@ -24,7 +25,8 @@ usePackage <- function(p) {
 ## Download Files (Broke; Eval = False)
 URL: http://www.who.int/healthinfo/statistics/mortality_rawdata/en/
 
-```{r, eval=FALSE}
+```{r Download, eval=FALSE}
+
 download.file("http://www.who.int/entity/healthinfo/statistics/morticd07.zip?ua=1",
               "Download/Morticd7")
 unzip("Download/Morticd7")
@@ -41,20 +43,37 @@ unzip("Download/Morticd7")
 #?http://stackoverflow.com/questions/3053833/using-r-to-download-zipped-data-file-extract-and-import-data
 
 temp <- tempfile()
+download.file("http://www.who.int/entity/healthinfo/statistics/morticd07.zip?ua=1",temp, method = "auto")
+ICD7 <- read.csv(unz(temp, "MortIcd7"))
+unlink(temp)
+
+temp <- tempfile()
+download.file("http://www.who.int/entity/healthinfo/statistics/morticd07.zip?ua=1",temp, method = "auto")
+ICD7 <- unz(temp, "MortIcd7")
+unlink(temp)
+
+str(ICD7)
+
+
+Test <- read.csv(ICD7)
+
+head(ICD7)
+
 download.file("http://www.who.int/entity/healthinfo/statistics/morticd07.zip?ua=1",temp)
 data <- read.table(unz(temp, "MortIcd7"))
-unlink(temp)
+
 
 ```
 
 
  
 
+
 ## Extract Data
-Extracts the Mortality and Population databases from the files downloaded from the WHO Mortality Database Website.
+Generates the Mortality and Population dataframes from the files downloaded from the WHO Mortality Database Website, to a "Data" folder.
 URL: http://www.who.int/healthinfo/statistics/mortality_rawdata/en/
 
-```{r}
+```{r Extract}
 usePackage('dplyr')
 
 Mortality <- bind_rows("10_2" = read.csv(unz("Data/Morticd10_part2.zip","Morticd10_part2")),
@@ -66,22 +85,20 @@ Mortality <- bind_rows("10_2" = read.csv(unz("Data/Morticd10_part2.zip","Morticd
 
 Mortality$ICD <- factor(as.factor(Mortality$ICD), c("10_2","10_1","9","8","7"))
 
-Population <- read.csv(unzip("Data/Pop.zip"))
+Population <- read.csv(unz("Data/Pop.zip","pop"))
 
 save (Mortality, file = "Data/Mortality.RData")
-save(Population, file = "Data/Population.RData")
+save (Population, file = "Data/Population.RData")
+
 
 ```
 
-!!!!MERGE FIRST!!!
-
 ## Homicide
-Removes all non-homicide causes of deaths from the Mortality database, and generates the Homicide database
+Removes all non-homicide causes of deaths from the Mortality dataframe. Generates the Homicide dataframe
 
-(Work Notes) Still needs verification.
+```{r Homicide}
 
-```{r}
-Homicide.Cause <- Mortality[c(which(Mortality$List=="07A" & Mortality$Cause=="A149"),
+Homicide <- Mortality[c(which(Mortality$List=="07A" & Mortality$Cause=="A149"),
                         which(Mortality$List=="07B" & Mortality$Cause=="B050"),
                         which(Mortality$List=="08A" & Mortality$Cause=="A148"),
                         which(Mortality$List=="08B" & Mortality$Cause=="B050"),
@@ -235,87 +252,438 @@ Homicide.Cause <- Mortality[c(which(Mortality$List=="07A" & Mortality$Cause=="A1
                                                     Mortality$Cause=="Y08" | Mortality$Cause=="Y09")),
                         which(Mortality$List=="UE1" & Mortality$Cause=="UE64")), ]
 
-save (Homicide.Cause, file = "Data/Homicide.Cause.RData")
+save (Homicide, file = "Data/Homicide.RData")
 
-```
-
-
-## Collapse
-Aggregates all causes of homicides in a single number by country, year and sex
-
-```{r}
-usePackage('dplyr')
-
-head(Homicide.Cause)
-
-aggregate(Homicide.Cause$, by = list(Homicide.Cause$Country, Homicide.Cause$Year, Homicide.Cause$Sex), FUN = sum)
-
-
-Homicide <- data.frame(
-  summarize(group_by(Homicide.Cause, Country, Year, Sex), 
-            Deaths = sum(Deaths1)))
-
-head(Homicide)
 ```
 
 ## Reshape
--Make One column for each Death for each sex; make the total
+Change the unit of analysis of the Mortality and Population dataframes from "Cause", by "Sex", by "Year", by "Country", to "Cause", by "Year", by "Country". The "Sex" collumn gets reshaped to a wide format.
 
-reshape2 package/dcast command
-  -Seems best because of multiple collumns. If anything, make the reshape command several times
+```{r Reshape}
+#Converts the Sex collumns to a named factor.
 
-reshaped <- 
-  reshape(collapsed, 
-          timevar = "Sex", 
-          idvar = colnames(collapsed[,c(1:2)]), 
-          direction = "wide")
+Homicide$Sex <- factor(Homicide$Sex, 
+                        levels = c(1, 2, 9), 
+                        labels = c("M", "F", "U"))
 
-reshaped$Deaths.Total <- mapply (sum, reshaped$Deaths.Male, reshaped$Deaths.Female, reshaped$Deaths.Unspecified, na.rm = TRUE)
+Population$Sex <- factor(Population$Sex, 
+                        levels = c(1, 2, 9), 
+                        labels = c("M", "F", "U"))
 
-usePackage('tidyr')
-gather
 
-## Merge Population
+#Verify for missing data in any ID variables
+for (i in c(1:7, 9:10)) {
+  print(colnames(Homicide[i]))
+  print(table(is.na(Homicide[,i])))
+}
 
-```{r}
-load("Data/Mortality.RData")
-load("Data/Population.RData")
+for (i in c(1:4, 6)) {
+  print(colnames(Population[i]))
+  print(table(is.na(Population[,i])))
+}
 
-ls()
-str(Mortality)
+rm(i)
 
-colnames(Population) %in% colnames(Mortality) # Returns a logical where true is if the first thing is in the second thing
+#Converts the missing values in the ID variables "Admin1" & "SubDiv" to "Country". Missing data in those variables refer to country level data.
 
-colnames(Population) %in% colnames(Mortality)
+Homicide$Admin1[is.na(Homicide$Admin1)] <- "Country"
+Homicide$SubDiv[is.na(Homicide$SubDiv)] <- "Country"
+Homicide$SubDiv[Homicide$SubDiv == ""] <- "Country"
 
-sum(colnames(Mortality) %in% colnames(Population)) #How many trues
+Population$Admin1[is.na(Population$Admin1)] <- "Country"
+Population$SubDiv <- as.character(Population$SubDiv)
+Population$SubDiv[is.na(Population$SubDiv)] <- "Country"
+Population$SubDiv[Population$SubDiv == ""] <- "Country"
 
-which() # Which ones are true
+#Reshape
+Homicide <- reshape(Homicide, 
+                    timevar = "Sex", 
+                    idvar = colnames(Homicide[,c(1:7, 9:10)]), 
+                    direction = "wide")
 
-Merged <- merge(Homicide, Population, all = TRUE)
 
-head (Merged)
+```
+
+## Collapse
+Aggregates all "Causes"" of Homicides in a single number by "Country", and "Year". 
+
+```{r Collapse}
+
+Homicide <- data.frame(
+  summarise_all(group_by(Homicide[,-7], 
+                         Country, Year, Admin1, SubDiv, ICD, List, Frmat, IM_Frmat),
+                funs(sum), na.rm = TRUE))
+
+```
+
+## Totals
+Generates the total homicides collumns for each "Country", "Year", and age group.
+
+```{r Totals}
+
+for (i in 1:26) {
+  Homicide[paste("Deaths", i, sep = "")] <-
+    apply(Homicide[, c(i+8,i+38,i+68)], MARGIN = 1, FUN = sum, na.rm = TRUE)
+}
+
+for (i in 1:4) {
+  Homicide[paste("IM_Deaths", i, sep = "")] <-
+    apply(Homicide[, c(i+34,i+64,i+94)], MARGIN = 1, FUN = sum, na.rm = TRUE)
+}
+
+```
+
+## Population
+Reshape, Generate Totals and Merge the Population dataframe with the Homicide dataframe
+
+```{r Population}
+
+# Reshape
+Population <- reshape(Population, 
+                      timevar = "Sex", 
+                      idvar = colnames(Population[,c(1:4, 6)]),
+                      direction = "wide")
+
+# Totals
+for (i in 1:26) {
+  Population[paste("Pop", i, sep = "")] <-
+    apply(Population[, c(i+5,i+32,i+59)], MARGIN = 1, FUN = sum, na.rm = TRUE)
+}
+
+
+Population["Lb"] <-
+    apply(Population[, c(32, 59, 86)], MARGIN = 1, FUN = sum, na.rm = TRUE)
+
+head(Population)
+
+
+names(Population)[names(Population) == 'Frmat'] <- 'FrmatPop'
+
+# Merge
+HomPop <- merge(Homicide, Population, all = TRUE)
+
 
 ```
 
 
-#Q. Why are population data missing for some countries-years and where can I find other sources of population data?
-#A. Some countries do not report population data to WHO.  Users can find population estimates from the United Nations web site http://esa.un.org/unpd/wpp
-
 ## Labels
-Label countries in the data
+Generates a "Name" variable for country names. Directly sourced from the WHO Country Codes table.
 
-```{r}
+```{r Labels}
+
+Codes <- read.csv(unz("Data/country_codes.zip","country_codes"))
+
+HomPop$Name <- factor(HomPop$Country, levels = Codes$country, labels = Codes$name)
+
+#Moves the "Name" to the first collumn of the df
+usePackage('dplyr')
+
+HomPop <- select(HomPop, Name, everything())
+
+#save(Homicide, HomPop, Mortality, Population, file = "Data/Data Jan21_2017.RData")
+#load("Data/Data Jan21_2017.RData")
+
+```
+
+
+#Rates
+Generates homicide rates and other variables from transformations
+
+```{r Rates}
+
+#Homicide Rate
+HomPop$HomRate <- (HomPop$Deaths1/HomPop$Pop1) * 100000
+
+#Age Distribution
+HomPop$Per15_24 <- ((HomPop$Pop9 + HomPop$Pop10)/HomPop$Pop1)*100
+
+```
+
+# Aggregated Trends
+Plots for all data points with valid data in the dataframe
+
+```{r Plots All}
+usePackage('ggplot2')
+usePackage('scales')
+
+# 1. Investigate the prevalence of missing Homicide and Population Data by Country
+  #Year; Deaths1; Pop1
+
+  #Homicide
+ggplot(HomPop[HomPop$Admin == "Country",], aes(x = Year)) +
+    geom_point(aes(y = Deaths1), size = 1.5, color = "dark red", alpha = .5) +
+    ggtitle("Total Homicides by Year") +
+    ylab("Total Number of Homicides") +
+    xlab("Year") +
+    scale_x_continuous(breaks=seq(1950, 2015, 5), limits = c(1950, 2015)) +
+    scale_y_continuous(labels = comma) +
+    theme(
+      text = element_text(family = "serif", size = 12),
+      panel.grid.major.x = element_line(colour = "white"),
+      panel.grid.major.y = element_line(colour = "gray"),
+      panel.background = element_rect(fill = "white"))
+
+  #Population
+ggplot(HomPop[HomPop$Admin == "Country",], aes(x = Year)) +
+    geom_point(aes(y = Pop1), size = 1.5, color = "dark red", alpha = .5) +
+    ggtitle("Total Population by Year") +
+    ylab("Total Population") +
+    xlab("Year") +
+    scale_x_continuous(breaks=seq(1950, 2015, 5), limits = c(1950, 2015)) +
+    scale_y_continuous(labels = comma) +
+    theme(
+      text = element_text(family = "serif", size = 12),
+      panel.grid.major.x = element_line(colour = "white"),
+      panel.grid.major.y = element_line(colour = "gray"),
+      panel.background = element_rect(fill = "white"))
+
+# 2. Investigate shared trends in Homicide Rate and in the Proportion of the Population between 15 to 24 years
+  #Year; HomRate; Per15_24
+
+  #Homicide Rate
+ggplot(HomPop[HomPop$Admin == "Country",], aes(x = Year)) +
+    geom_point(aes(y = HomRate), size = 1.5, color = "dark red", alpha = .5) +
+    ggtitle("Homicide Rate by Year") +
+    ylab("Homicide Rate per 100,000 Population") +
+    xlab("Year") +
+    scale_x_continuous(breaks=seq(1950, 2015, 5), limits = c(1950, 2015)) +
+    scale_y_continuous(labels = comma) +
+    theme(
+      text = element_text(family = "serif", size = 12),
+      panel.grid.major.x = element_line(colour = "white"),
+      panel.grid.major.y = element_line(colour = "gray"),
+      panel.background = element_rect(fill = "white"))
+
+  #Population 15 to 24
+ggplot(HomPop[HomPop$Admin == "Country",], aes(x = Year)) +
+    geom_point(aes(y = Per15_24), size = 1.5, color = "dark red", alpha = .5) +
+    ggtitle("Percent of the Population Aged 15 to 24 per Year") +
+    ylab("Percent 15 to 24") +
+    xlab("Year") +
+    scale_x_continuous(breaks=seq(1950, 2015, 5), limits = c(1950, 2015)) +
+    scale_y_continuous(labels = comma) +
+    theme(
+      text = element_text(family = "serif", size = 12),
+      panel.grid.major.x = element_line(colour = "white"),
+      panel.grid.major.y = element_line(colour = "gray"),
+      panel.background = element_rect(fill = "white"))
+
+# 3. Investigate the Association between Homicide Rates and the Proportion of the Population between 15 to 24 years
+  #HomRate; Per15_24
+
+ggplot(HomPop[HomPop$Admin == "Country", ], aes(Per15_24/100)) +
+  geom_smooth(aes(y = HomRate), method = "lm") +
+  geom_point(aes(y = HomRate), alpha = .5) +
+  ggtitle("Population 15 to 24 and Homicide Rate by Year") +
+  ylab("Homicide Rate per 100,000 population") +
+  xlab("Percent of the Population Aged 15 to 24") +
+  scale_x_continuous(labels = percent) +
+  scale_y_continuous(labels = comma) +
+  theme(
+    text = element_text(family = "serif", size = 12),
+    panel.grid.major.x = element_line(colour = "white"),
+    panel.grid.major.y = element_line(colour = "gray"),
+    panel.background = element_rect(fill = "white"))
 
 ```
 
 
 ## Country-level Trends
+Investigate trends in the data with individualized graphs by country
 
-```{r}
-library(ggplot2)
+```{r Plots Countries}
+usePackage('ggplot2')
+usePackage('scales')
+usePackage('gridExtra')
 
-facet_grid(~ Country)
+dir.create("Plots", showWarnings = FALSE)
+
+# 1. Investigate the prevalence of missing Homicide and Population Data by Country
+  #Deaths1 & Pop1
+
+pdf("Plots/Year_Hom_Pop.pdf")
+
+for (i in unique(HomPop$Country)) {
+  
+  Top <- 
+    ggplot(HomPop[HomPop$Country == i & HomPop$Admin == "Country", ], aes(x = Year)) +
+    geom_line(aes(y = Deaths1), size = .5, color = "red") +
+    geom_point(aes(y = Deaths1), size = 1.5, color = "dark red") +
+    ggtitle(paste("Total Homicides - ",
+                  unique(HomPop$Name[HomPop$Country == i]), " (",
+                  unique(HomPop$Country[HomPop$Country == i]), ")")) +
+    ylab("Total Number of Homicides") +
+    xlab("Year") +
+    scale_x_continuous(breaks=seq(1950, 2015, 5), limits = c(1950, 2015)) +
+    scale_y_continuous(labels = comma) +
+    theme(
+      text = element_text(family = "serif", size = 12),
+      panel.grid.major.x = element_line(colour = "white"),
+      panel.grid.major.y = element_line(colour = "gray"),
+      panel.background = element_rect(fill = "white"))
+
+  Bottom <- 
+    ggplot(HomPop[HomPop$Country == i & HomPop$Admin == "Country", ], aes(x = Year)) +
+    geom_line(aes(y = Pop1), size = .5, color = "blue") +
+    geom_point(aes(y = Pop1), size = 1.5, color = "dark blue") +
+    ggtitle(paste("Total Population - ",
+                  unique(HomPop$Name[HomPop$Country == i]), " (",
+                  unique(HomPop$Country[HomPop$Country == i]), ")")) +
+    xlab("Year") +
+    ylab("Total Population") +
+    scale_x_continuous(breaks=seq(1950, 2015, 5), limits = c(1950, 2015)) +
+    scale_y_continuous(labels = comma) +
+    theme(
+      text = element_text(family = "serif", size = 12),
+      panel.grid.major.x = element_line(colour = "white"),
+      panel.grid.major.y = element_line(colour = "gray"),
+      panel.background = element_rect(fill = "white"))
+  
+  grid.arrange(Top, Bottom)
+  
+  print(paste(unique(HomPop$Name[HomPop$Country == i]), "(",
+              unique(HomPop$Country[HomPop$Country == i]), ") Done."), sep = NULL)
+  
+}
+
+dev.off()
+
+# 2. Investigate shared trends in Homicide Rate and in the Proportion of the Population between 15 to 24 years
+  #Year; HomRate; Per15_24
+     
+pdf("Plots/Year_HomRate_Per1524.pdf")
+
+for (i in unique(HomPop$Country)) {
+  
+  Top <- 
+    ggplot(HomPop[HomPop$Country == i & HomPop$Admin == "Country", ], aes(x = Year)) +
+    geom_line(aes(y = HomRate), size = .5, color = "red") +
+    geom_point(aes(y = HomRate), size = 1.5, color = "dark red") +
+    ggtitle(paste("Homicide Rate - ",
+                  unique(HomPop$Name[HomPop$Country == i]), " (",
+                  unique(HomPop$Country[HomPop$Country == i]), ")")) +
+    ylab("Homicide Rate per 100,000 population") +
+    xlab("Year") +
+    scale_x_continuous(breaks=seq(1950, 2015, 5), limits = c(1950, 2015)) +
+    scale_y_continuous(labels = comma) +
+    theme(
+      text = element_text(family = "serif", size = 12),
+      panel.grid.major.x = element_line(colour = "white"),
+      panel.grid.major.y = element_line(colour = "gray"),
+      panel.background = element_rect(fill = "white"))
+
+  
+  Bottom <- 
+    ggplot(HomPop[HomPop$Country == i & HomPop$Admin == "Country", ], aes(x = Year)) +
+    geom_line(aes(y = Per15_24), size = .5, color = "blue") +
+    geom_point(aes(y = Per15_24), size = 1.5, color = "dark blue") +
+    ggtitle(paste("Percent Aged 15 to 24 - ",
+                  unique(HomPop$Name[HomPop$Country == i]), " (",
+                  unique(HomPop$Country[HomPop$Country == i]), ")")) +
+    xlab("Year") +
+    ylab("Percent of the Population Aged 15 to 24") +
+    scale_x_continuous(breaks=seq(1950, 2015, 5), limits = c(1950, 2015)) +
+    scale_y_continuous(labels = percent) +
+    theme(
+      text = element_text(family = "serif", size = 12),
+      panel.grid.major.x = element_line(colour = "white"),
+      panel.grid.major.y = element_line(colour = "gray"),
+      panel.background = element_rect(fill = "white"))
+  
+  grid.arrange(Top, Bottom)
+  
+  print(paste(unique(HomPop$Name[HomPop$Country == i]), "(",
+              unique(HomPop$Country[HomPop$Country == i]), ") Done."), sep = NULL)
+
+}
+
+dev.off()
+
+# 3. Investigate the Association between Homicide Rates and the Proportion of the Population between 15 to 24 years
+  #HomRate; Per15_24
+
+pdf("Plots/Scatter_HomRate_Per1524.pdf")
+
+for (i in unique(HomPop$Country)) {
+  dots <- ggplot(HomPop[HomPop$Country == i & HomPop$Admin == "Country", ], 
+                 aes(x = (Per15_24/100))) +
+    geom_smooth(aes(y = HomRate), method = "lm") +
+    geom_point(aes(y = HomRate), alpha = .5) +
+    ggtitle(paste("Population 15 to 24 and Homicide Rate - ",
+                  unique(HomPop$Name[HomPop$Country == i]), " (",
+                  unique(HomPop$Country[HomPop$Country == i]), ")")) +
+    ylab("Homicide Rate per 100,000 population") +
+    xlab("Percent of the Population Aged 15 to 24") +
+    scale_x_continuous(labels = percent) +
+    scale_y_continuous(labels = comma) +
+    theme(
+      text = element_text(family = "serif", size = 12),
+      panel.grid.major.x = element_line(colour = "white"),
+      panel.grid.major.y = element_line(colour = "gray"),
+      panel.background = element_rect(fill = "white"))
+  
+  grid.arrange(dots)
+
+  print(paste(unique(HomPop$Name[HomPop$Country == i]), "(",
+              unique(HomPop$Country[HomPop$Country == i]), ") Done."), sep = NULL)
+
+}
+
+dev.off()
 
 ```
 
+
+# Models
+Summary models of the relationship between the percentage of the population between 14 and 24 years of age, and the homicide rate of countries. OLS estimates. More adequade fixed effect models require adjsments to the data, but will be executed in the future.
+
+```{r Models}
+
+# Simple Linear Regression with an Unstransformed Dependent Variable
+ols <-lm(HomRate ~ Per15_24, data=HomPop)
+summary(ols)
+str(ols)
+ols$coefficients[2]
+
+# However, the distribution of Homicide Rates is highly skewed to the right.
+hist(HomPop$HomRate)
+
+# Since there are no real zeros in the scale of homicide rates, I will log-transform the dependent variable
+
+HomPop$Log_HomRate <- log(HomPop$HomRate)
+HomPop$Log_HomRate[which(is.infinite(HomPop$Log_HomRate))] <- NA
+
+ols_log <-lm(Log_HomRate ~ Per15_24, data=HomPop, na.action = na.omit)
+
+summary(ols_log)
+
+exp(ols_log$coefficients[2])
+
+```
+
+On average, each addition percentage point in the proportion of the population between 15 to 24 years of age, corresponds to `exp(ols_log$coefficients[2])`. Results are preliminary. They only consider countries and years with observable valid numbers. The model also desconsider the dependence in residuals within countries.
+
+I will later execute a fixed effects model (plm), but only after complementing and cleaning the data.
+
+# Fixed Effects
+Not evaluated. Requires Unique Indexes
+```{r, eval = FALSE}
+
+# Fixed effects
+
+usePackage('plm')
+
+fixed <- plm <- HomRate ~ Per15_24, data=HomPop, index=c("Country", "Year"), model="within")
+
+summary(fixed)
+```
+
+
+## Summary Models
+
+#Q. Why are population data missing for some countries-years and where can I find other sources of population data?
+#A. Some countries do not report population data to WHO.  Users can find population estimates from the United Nations web site http://esa.un.org/unpd/wpp
+
+## Country-specific Solutions
+
+#Adjusments in Specific countries 

@@ -1,0 +1,630 @@
+---
+title: "Final Project_MSantos"
+author: "Mateus Renno Santos"
+date: "January 22, 2017"
+output: html_document
+---
+
+## Setup
+Clean the workspace, and installs the 'usePackage' function.
+
+```{r Setup}
+#Clear the workspace
+rm(list = ls())
+
+# Function - usePackage()
+  #Library a package, and installs the package if necessary. Use this function instead of "library()"
+usePackage <- function(x) {
+    if (!is.element(x, installed.packages()[,1]))
+        install.packages(x, dep = TRUE)
+    require(x, character.only = TRUE)
+}
+
+usePackage('dplyr')
+usePackage('ggplot2')
+usePackage('scales')
+usePackage('gridExtra')
+
+```
+
+
+## Extract Data
+Generates the Mortality and Population dataframes from the files downloaded from the WHO Mortality Database Website, to a "Data" folder.
+URL: http://www.who.int/healthinfo/statistics/mortality_rawdata/en/
+
+```{r Extract}
+usePackage('dplyr')
+
+Mortality <- bind_rows("10_2" = read.csv(unz("Data/Morticd10_part2.zip","Morticd10_part2")),
+                       "10_1" = read.csv(unz("Data/Morticd10_part1.zip","Morticd10_part1")),
+                       "9" = read.csv(unz("Data/morticd9.zip","Morticd9")),
+                       "8" = read.csv(unz("Data/morticd08.zip","Morticd8")),
+                       "7" = read.csv(unz("Data/morticd07.zip","MortIcd7")),
+                       .id = "ICD")
+
+Mortality$ICD <- factor(as.factor(Mortality$ICD), c("10_2","10_1","9","8","7"))
+
+Population <- read.csv(unz("Data/Pop.zip","pop"))
+
+save (Mortality, file = "Data/Mortality.RData")
+save (Population, file = "Data/Population.RData")
+
+
+```
+
+
+## Homicide
+Removes all non-homicide causes of deaths from the Mortality dataframe. Generates the Homicide dataframe
+
+```{r Homicide}
+
+Homicide <- Mortality[c(which(Mortality$List=="07A" & Mortality$Cause=="A149"),
+                        which(Mortality$List=="07B" & Mortality$Cause=="B050"),
+                        which(Mortality$List=="08A" & Mortality$Cause=="A148"),
+                        which(Mortality$List=="08B" & Mortality$Cause=="B050"),
+                        which(Mortality$List=="09A" & Mortality$Cause=="B55"),
+                        which(Mortality$List=="09B" & Mortality$Cause=="B55"),
+                        which(Mortality$List=="09C" & Mortality$Cause=="C103"),
+                        which(Mortality$List=="09N" & (Mortality$Cause=="B55" | Mortality$Cause=="CH17")),
+                        which(Mortality$List=="101" & (Mortality$Cause=="1102" | Mortality$Cause=="1103")),
+                        which(Mortality$List=="103" & (Mortality$Cause=="X85" | Mortality$Cause=="X86" | 
+                                                    Mortality$Cause=="X87" | Mortality$Cause=="X88" | 
+                                                    Mortality$Cause=="X89" | Mortality$Cause=="X90" | 
+                                                    Mortality$Cause=="X91" | Mortality$Cause=="X92" | 
+                                                    Mortality$Cause=="X93" | Mortality$Cause=="X94" | 
+                                                    Mortality$Cause=="X95" | Mortality$Cause=="X96" | 
+                                                    Mortality$Cause=="X97" | Mortality$Cause=="X98" | 
+                                                    Mortality$Cause=="X99" | Mortality$Cause=="Y00" | 
+                                                    Mortality$Cause=="Y01" | Mortality$Cause=="Y02" | 
+                                                    Mortality$Cause=="Y03" | Mortality$Cause=="Y04" | 
+                                                    Mortality$Cause=="Y05" | Mortality$Cause=="Y06" | 
+                                                    Mortality$Cause=="Y07" | Mortality$Cause=="Y08" | 
+                                                    Mortality$Cause=="Y09")),
+                        which(Mortality$List=="104" & (Mortality$Cause=="X850" | Mortality$Cause=="X851" | 
+                                                    Mortality$Cause=="X852"	| Mortality$Cause=="X853"	| 
+                                                    Mortality$Cause=="X854" | Mortality$Cause=="X855" | 
+                                                    Mortality$Cause=="X856" | Mortality$Cause=="X857" | 
+                                                    Mortality$Cause=="X858" | Mortality$Cause=="X859" | 
+                                                    Mortality$Cause=="X860" | Mortality$Cause=="X861" | 
+                                                    Mortality$Cause=="X862" | Mortality$Cause=="X864" | 
+                                                    Mortality$Cause=="X865" | Mortality$Cause=="X866" | 
+                                                    Mortality$Cause=="X868" | Mortality$Cause=="X869" | 
+                                                    Mortality$Cause=="X870" | Mortality$Cause=="X871" | 
+                                                    Mortality$Cause=="X872" | Mortality$Cause=="X874" | 
+                                                    Mortality$Cause=="X875" | Mortality$Cause=="X876" | 
+                                                    Mortality$Cause=="X877" | Mortality$Cause=="X878" | 
+                                                    Mortality$Cause=="X879" | Mortality$Cause=="X880" | 
+                                                    Mortality$Cause=="X881" | Mortality$Cause=="X882" | 
+                                                    Mortality$Cause=="X883" | Mortality$Cause=="X884" | 
+                                                    Mortality$Cause=="X885" | Mortality$Cause=="X886" | 
+                                                    Mortality$Cause=="X887" | Mortality$Cause=="X888" | 
+                                                    Mortality$Cause=="X889" | Mortality$Cause=="X890" | 
+                                                    Mortality$Cause=="X891" | Mortality$Cause=="X892" | 
+                                                    Mortality$Cause=="X893" | Mortality$Cause=="X894" | 
+                                                    Mortality$Cause=="X895" | Mortality$Cause=="X896" | 
+                                                    Mortality$Cause=="X897" | Mortality$Cause=="X898" | 
+                                                    Mortality$Cause=="X899" | Mortality$Cause=="X900" | 
+                                                    Mortality$Cause=="X901" | Mortality$Cause=="X902" | 
+                                                    Mortality$Cause=="X903" | Mortality$Cause=="X904" | 
+                                                    Mortality$Cause=="X905" | Mortality$Cause=="X906" | 
+                                                    Mortality$Cause=="X907" | Mortality$Cause=="X908" | 
+                                                    Mortality$Cause=="X909" | Mortality$Cause=="X910" | 
+                                                    Mortality$Cause=="X911" | Mortality$Cause=="X912" | 
+                                                    Mortality$Cause=="X913" | Mortality$Cause=="X914" | 
+                                                    Mortality$Cause=="X915" | Mortality$Cause=="X916" | 
+                                                    Mortality$Cause=="X917" | Mortality$Cause=="X918" | 
+                                                    Mortality$Cause=="X919" | Mortality$Cause=="X920" | 
+                                                    Mortality$Cause=="X921" | Mortality$Cause=="X922" | 
+                                                    Mortality$Cause=="X923" | Mortality$Cause=="X924" | 
+                                                    Mortality$Cause=="X925" | Mortality$Cause=="X926" | 
+                                                    Mortality$Cause=="X927" | Mortality$Cause=="X928" | 
+                                                    Mortality$Cause=="X929" | Mortality$Cause=="X930" | 
+                                                    Mortality$Cause=="X931" | Mortality$Cause=="X932" | 
+                                                    Mortality$Cause=="X933" | Mortality$Cause=="X934" | 
+                                                    Mortality$Cause=="X935" | Mortality$Cause=="X936" | 
+                                                    Mortality$Cause=="X937" | Mortality$Cause=="X938" | 
+                                                    Mortality$Cause=="X939" | Mortality$Cause=="X940" | 
+                                                    Mortality$Cause=="X941" | Mortality$Cause=="X942" | 
+                                                    Mortality$Cause=="X943" | Mortality$Cause=="X944" | 
+                                                    Mortality$Cause=="X945" | Mortality$Cause=="X946" | 
+                                                    Mortality$Cause=="X947" | Mortality$Cause=="X948" | 
+                                                    Mortality$Cause=="X949" | Mortality$Cause=="X950" | 
+                                                    Mortality$Cause=="X951" | Mortality$Cause=="X952" | 
+                                                    Mortality$Cause=="X953" | Mortality$Cause=="X954" | 
+                                                    Mortality$Cause=="X955" | Mortality$Cause=="X956" | 
+                                                    Mortality$Cause=="X957" | Mortality$Cause=="X958" | 
+                                                    Mortality$Cause=="X959" | Mortality$Cause=="X960" | 
+                                                    Mortality$Cause=="X961" | Mortality$Cause=="X962" | 
+                                                    Mortality$Cause=="X963" | Mortality$Cause=="X964" | 
+                                                    Mortality$Cause=="X965" | Mortality$Cause=="X966" | 
+                                                    Mortality$Cause=="X967" | Mortality$Cause=="X968" | 
+                                                    Mortality$Cause=="X969" | Mortality$Cause=="X970" | 
+                                                    Mortality$Cause=="X971" | Mortality$Cause=="X972" | 
+                                                    Mortality$Cause=="X973" | Mortality$Cause=="X974" | 
+                                                    Mortality$Cause=="X975" | Mortality$Cause=="X976" | 
+                                                    Mortality$Cause=="X977" | Mortality$Cause=="X978" | 
+                                                    Mortality$Cause=="X979" | Mortality$Cause=="X980" | 
+                                                    Mortality$Cause=="X981" | Mortality$Cause=="X982" | 
+                                                    Mortality$Cause=="X983" | Mortality$Cause=="X984" | 
+                                                    Mortality$Cause=="X985" | Mortality$Cause=="X987" | 
+                                                    Mortality$Cause=="X988" | Mortality$Cause=="X989" | 
+                                                    Mortality$Cause=="X990" | Mortality$Cause=="X991" | 
+                                                    Mortality$Cause=="X992" | Mortality$Cause=="X993" | 
+                                                    Mortality$Cause=="X994" | Mortality$Cause=="X995" | 
+                                                    Mortality$Cause=="X996" | Mortality$Cause=="X997" | 
+                                                    Mortality$Cause=="X998" | Mortality$Cause=="X999" | 
+                                                    Mortality$Cause=="Y000" | Mortality$Cause=="Y001" | 
+                                                    Mortality$Cause=="Y002" | Mortality$Cause=="Y003" | 
+                                                    Mortality$Cause=="Y004" | Mortality$Cause=="Y005" | 
+                                                    Mortality$Cause=="Y006" | Mortality$Cause=="Y007" | 
+                                                    Mortality$Cause=="Y008" | Mortality$Cause=="Y009" | 
+                                                    Mortality$Cause=="Y010" | Mortality$Cause=="Y011" | 
+                                                    Mortality$Cause=="Y012" | Mortality$Cause=="Y013" | 
+                                                    Mortality$Cause=="Y014" | Mortality$Cause=="Y015" | 
+                                                    Mortality$Cause=="Y016" | Mortality$Cause=="Y017" | 
+                                                    Mortality$Cause=="Y018" | Mortality$Cause=="Y019" | 
+                                                    Mortality$Cause=="Y020" | Mortality$Cause=="Y021" | 
+                                                    Mortality$Cause=="Y022" | Mortality$Cause=="Y023" | 
+                                                    Mortality$Cause=="Y024" | Mortality$Cause=="Y025" | 
+                                                    Mortality$Cause=="Y026" | Mortality$Cause=="Y027" | 
+                                                    Mortality$Cause=="Y028" | Mortality$Cause=="Y029" | 
+                                                    Mortality$Cause=="Y030" | Mortality$Cause=="Y031" | 
+                                                    Mortality$Cause=="Y032" | Mortality$Cause=="Y033" | 
+                                                    Mortality$Cause=="Y034" | Mortality$Cause=="Y035" | 
+                                                    Mortality$Cause=="Y036" | Mortality$Cause=="Y037" | 
+                                                    Mortality$Cause=="Y038" | Mortality$Cause=="Y039" | 
+                                                    Mortality$Cause=="Y040" | Mortality$Cause=="Y041" | 
+                                                    Mortality$Cause=="Y042" | Mortality$Cause=="Y043" | 
+                                                    Mortality$Cause=="Y044" | Mortality$Cause=="Y045" | 
+                                                    Mortality$Cause=="Y046" | Mortality$Cause=="Y047" | 
+                                                    Mortality$Cause=="Y048" | Mortality$Cause=="Y049" | 
+                                                    Mortality$Cause=="Y050" | Mortality$Cause=="Y051" | 
+                                                    Mortality$Cause=="Y052" | Mortality$Cause=="Y053" | 
+                                                    Mortality$Cause=="Y054" | Mortality$Cause=="Y055" | 
+                                                    Mortality$Cause=="Y056" | Mortality$Cause=="Y057" | 
+                                                    Mortality$Cause=="Y058" | Mortality$Cause=="Y059" | 
+                                                    Mortality$Cause=="Y060" | Mortality$Cause=="Y061" | 
+                                                    Mortality$Cause=="Y062" | Mortality$Cause=="Y068" | 
+                                                    Mortality$Cause=="Y069" | Mortality$Cause=="Y070" | 
+                                                    Mortality$Cause=="Y071" | Mortality$Cause=="Y072" | 
+                                                    Mortality$Cause=="Y073" | Mortality$Cause=="Y078" | 
+                                                    Mortality$Cause=="Y079" | Mortality$Cause=="Y080" | 
+                                                    Mortality$Cause=="Y081" | Mortality$Cause=="Y082" | 
+                                                    Mortality$Cause=="Y083" | Mortality$Cause=="Y084" | 
+                                                    Mortality$Cause=="Y085" | Mortality$Cause=="Y086" | 
+                                                    Mortality$Cause=="Y087" | Mortality$Cause=="Y088" | 
+                                                    Mortality$Cause=="Y089" | Mortality$Cause=="Y090" | 
+                                                    Mortality$Cause=="Y091" | Mortality$Cause=="Y092" | 
+                                                    Mortality$Cause=="Y093" | Mortality$Cause=="Y094" | 
+                                                    Mortality$Cause=="Y095" | Mortality$Cause=="Y096" | 
+                                                    Mortality$Cause=="Y097" | Mortality$Cause=="Y098" | 
+                                                    Mortality$Cause=="Y099" | Mortality$Cause=="Y871")),
+                        which(Mortality$List=="10M" & (Mortality$Cause=="Y871" | Mortality$Cause=="X85" | 
+                                                    Mortality$Cause=="X86" | Mortality$Cause=="X87" | 
+                                                    Mortality$Cause=="X88" | Mortality$Cause=="X89" | 
+                                                    Mortality$Cause=="X90" | Mortality$Cause=="X91" | 
+                                                    Mortality$Cause=="X92" | Mortality$Cause=="X93" | 
+                                                    Mortality$Cause=="X94" | Mortality$Cause=="X95" | 
+                                                    Mortality$Cause=="X96" | Mortality$Cause=="X97" | 
+                                                    Mortality$Cause=="Y02" | Mortality$Cause=="Y03" | 
+                                                    Mortality$Cause=="Y04" | Mortality$Cause=="Y05" | 
+                                                    Mortality$Cause=="Y06" | Mortality$Cause=="Y07" | 
+                                                    Mortality$Cause=="Y08" | Mortality$Cause=="Y09")),
+                        which(Mortality$List=="UE1" & Mortality$Cause=="UE64")), ]
+
+save (Homicide, file = "Data/Homicide.RData")
+
+```
+
+
+## Reshape
+Change the unit of analysis of the Mortality and Population dataframes from "Cause", by "Sex", by "Year", by "Country", to "Cause", by "Year", by "Country". The "Sex" collumn gets reshaped to a wide format.
+
+```{r Reshape}
+#Converts the Sex collumns to a named factor.
+
+Homicide$Sex <- factor(Homicide$Sex, 
+                        levels = c(1, 2, 9), 
+                        labels = c("M", "F", "U"))
+
+Population$Sex <- factor(Population$Sex, 
+                        levels = c(1, 2, 9), 
+                        labels = c("M", "F", "U"))
+
+
+#Verify for missing data in any ID variables
+for (i in c(1:7, 9:10)) {
+  print(colnames(Homicide[i]))
+  print(table(is.na(Homicide[,i])))
+}
+
+for (i in c(1:4, 6)) {
+  print(colnames(Population[i]))
+  print(table(is.na(Population[,i])))
+}
+
+#Converts the missing values in the ID variables "Admin1" & "SubDiv" to "Country". Missing data in those variables refer to country level data.
+
+Homicide$Admin1[is.na(Homicide$Admin1)] <- "Country"
+Homicide$SubDiv[is.na(Homicide$SubDiv)] <- "Country"
+Homicide$SubDiv[Homicide$SubDiv == ""] <- "Country"
+
+Population$Admin1[is.na(Population$Admin1)] <- "Country"
+Population$SubDiv <- as.character(Population$SubDiv)
+Population$SubDiv[is.na(Population$SubDiv)] <- "Country"
+Population$SubDiv[Population$SubDiv == ""] <- "Country"
+
+#Reshape
+Homicide <- reshape(Homicide, 
+                    timevar = "Sex", 
+                    idvar = colnames(Homicide[,c(1:7, 9:10)]), 
+                    direction = "wide")
+
+
+```
+
+
+## Collapse
+Aggregates all "Causes"" of Homicides in a single number by "Country", and "Year". 
+
+```{r Collapse}
+
+Homicide <- data.frame(
+  summarise_all(group_by(Homicide[,-7], 
+                         Country, Year, Admin1, SubDiv, ICD, List, Frmat, IM_Frmat),
+                funs(sum), na.rm = TRUE))
+
+```
+
+
+## Totals
+Generates the total homicides collumns for each "Country", "Year", and age group.
+
+```{r Totals}
+
+for (i in 1:26) {
+  Homicide[paste("Deaths", i, sep = "")] <-
+    apply(Homicide[, c(i+8,i+38,i+68)], MARGIN = 1, FUN = sum, na.rm = TRUE)
+}
+
+for (i in 1:4) {
+  Homicide[paste("IM_Deaths", i, sep = "")] <-
+    apply(Homicide[, c(i+34,i+64,i+94)], MARGIN = 1, FUN = sum, na.rm = TRUE)
+}
+
+```
+
+
+## Population
+Reshape, Generate Totals and Merge the Population dataframe with the Homicide dataframe
+
+```{r Population}
+
+# Reshape
+Population <- reshape(Population, 
+                      timevar = "Sex", 
+                      idvar = colnames(Population[,c(1:4, 6)]),
+                      direction = "wide")
+
+# Totals
+for (i in 1:26) {
+  Population[paste("Pop", i, sep = "")] <-
+    apply(Population[, c(i+5,i+32,i+59)], MARGIN = 1, FUN = sum, na.rm = TRUE)
+}
+
+Population["Lb"] <-
+    apply(Population[, c(32, 59, 86)], MARGIN = 1, FUN = sum, na.rm = TRUE)
+
+names(Population)[names(Population) == 'Frmat'] <- 'FrmatPop'
+
+# Merge
+HomPop <- merge(Homicide, Population, all = TRUE)
+
+
+```
+
+
+## Labels
+Generates a "Name" variable for country names. Directly sourced from the WHO Country Codes table.
+
+```{r Labels}
+
+Codes <- read.csv(unz("Data/country_codes.zip","country_codes"))
+
+HomPop$Name <- factor(HomPop$Country, levels = Codes$country, labels = Codes$name)
+
+#Moves the "Name" to the first collumn of the df
+usePackage('dplyr')
+
+HomPop <- select(HomPop, Name, everything())
+
+```
+
+
+#Rates
+Generates homicide rates and other variables from transformations
+
+```{r Rates}
+
+#Homicide Rate
+HomPop$HomRate <- (HomPop$Deaths1/HomPop$Pop1) * 100000
+
+#Age Distribution
+HomPop$Per15_24 <- ((HomPop$Pop9 + HomPop$Pop10)/HomPop$Pop1)*100
+
+
+save(HomPop, Homicide, Mortality, Population, file = "Data/Objects Jan22_2017.RData")
+
+#load("Data/Objects Jan22_2017.RData")
+
+```
+
+
+# Aggregated Trends
+Plots for all data points with valid data in the dataframe
+
+```{r Plots All}
+usePackage('ggplot2')
+usePackage('scales')
+
+# 1. Investigate the prevalence of missing Homicide and Population Data by Country
+  #Year; Deaths1; Pop1
+
+  #Homicide
+ggplot(HomPop[HomPop$Admin == "Country",], aes(x = Year)) +
+    geom_point(aes(y = Deaths1), size = 1.5, color = "dark red", alpha = .5) +
+    ggtitle("Total Homicides by Year") +
+    ylab("Total Number of Homicides") +
+    xlab("Year") +
+    scale_x_continuous(breaks=seq(1950, 2015, 5), limits = c(1950, 2015)) +
+    scale_y_continuous(labels = comma) +
+    theme(
+      text = element_text(family = "serif", size = 12),
+      panel.grid.major.x = element_line(colour = "white"),
+      panel.grid.major.y = element_line(colour = "gray"),
+      panel.background = element_rect(fill = "white"))
+
+  #Population
+ggplot(HomPop[HomPop$Admin == "Country",], aes(x = Year)) +
+    geom_point(aes(y = Pop1), size = 1.5, color = "dark red", alpha = .5) +
+    ggtitle("Total Population by Year") +
+    ylab("Total Population") +
+    xlab("Year") +
+    scale_x_continuous(breaks=seq(1950, 2015, 5), limits = c(1950, 2015)) +
+    scale_y_continuous(labels = comma) +
+    theme(
+      text = element_text(family = "serif", size = 12),
+      panel.grid.major.x = element_line(colour = "white"),
+      panel.grid.major.y = element_line(colour = "gray"),
+      panel.background = element_rect(fill = "white"))
+
+# 2. Investigate shared trends in Homicide Rate and in the Proportion of the Population between 15 to 24 years
+  #Year; HomRate; Per15_24
+
+  #Homicide Rate
+ggplot(HomPop[HomPop$Admin == "Country",], aes(x = Year)) +
+    geom_point(aes(y = HomRate), size = 1.5, color = "dark red", alpha = .5) +
+    ggtitle("Homicide Rate by Year") +
+    ylab("Homicide Rate per 100,000 Population") +
+    xlab("Year") +
+    scale_x_continuous(breaks=seq(1950, 2015, 5), limits = c(1950, 2015)) +
+    scale_y_continuous(labels = comma) +
+    theme(
+      text = element_text(family = "serif", size = 12),
+      panel.grid.major.x = element_line(colour = "white"),
+      panel.grid.major.y = element_line(colour = "gray"),
+      panel.background = element_rect(fill = "white"))
+
+  #Population 15 to 24
+ggplot(HomPop[HomPop$Admin == "Country",], aes(x = Year)) +
+    geom_point(aes(y = Per15_24), size = 1.5, color = "dark red", alpha = .5) +
+    ggtitle("Percent of the Population Aged 15 to 24 per Year") +
+    ylab("Percent 15 to 24") +
+    xlab("Year") +
+    scale_x_continuous(breaks=seq(1950, 2015, 5), limits = c(1950, 2015)) +
+    scale_y_continuous(labels = comma) +
+    theme(
+      text = element_text(family = "serif", size = 12),
+      panel.grid.major.x = element_line(colour = "white"),
+      panel.grid.major.y = element_line(colour = "gray"),
+      panel.background = element_rect(fill = "white"))
+
+# 3. Investigate the Association between Homicide Rates and the Proportion of the Population between 15 to 24 years
+  #HomRate; Per15_24
+
+ggplot(HomPop[HomPop$Admin == "Country", ], aes(Per15_24/100)) +
+  geom_smooth(aes(y = HomRate), method = "lm") +
+  geom_point(aes(y = HomRate), alpha = .5) +
+  ggtitle("Population 15 to 24 and Homicide Rate by Year") +
+  ylab("Homicide Rate per 100,000 population") +
+  xlab("Percent of the Population Aged 15 to 24") +
+  scale_x_continuous(labels = percent) +
+  scale_y_log10(labels = comma) +
+  theme(
+    text = element_text(family = "serif", size = 12),
+    panel.grid.major.x = element_line(colour = "white"),
+    panel.grid.major.y = element_line(colour = "gray"),
+    panel.background = element_rect(fill = "white"))
+
+```
+
+
+## Country-level Trends
+Investigate trends in the data with individualized graphs by country
+
+```{r Plots Countries, message=FALSE, warning=FALSE}
+usePackage('ggplot2')
+usePackage('scales')
+usePackage('gridExtra')
+
+dir.create("Plots", showWarnings = FALSE)
+
+# 1. Investigate the prevalence of missing Homicide and Population Data by Country
+  #Deaths1 & Pop1
+
+pdf("Plots/Year_Hom_Pop.pdf")
+
+for (i in unique(HomPop$Country)) {
+  
+  Top <- 
+    ggplot(HomPop[HomPop$Country == i & HomPop$Admin == "Country", ], aes(x = Year)) +
+    geom_line(aes(y = Deaths1), size = .5, color = "red") +
+    geom_point(aes(y = Deaths1), size = 1.5, color = "dark red") +
+    ggtitle(paste("Total Homicides - ",
+                  unique(HomPop$Name[HomPop$Country == i]), " (",
+                  unique(HomPop$Country[HomPop$Country == i]), ")")) +
+    ylab("Total Number of Homicides") +
+    xlab("Year") +
+    scale_x_continuous(breaks=seq(1950, 2015, 5), limits = c(1950, 2015)) +
+    scale_y_continuous(labels = comma) +
+    theme(
+      text = element_text(family = "serif", size = 12),
+      panel.grid.major.x = element_line(colour = "white"),
+      panel.grid.major.y = element_line(colour = "gray"),
+      panel.background = element_rect(fill = "white"))
+
+  Bottom <- 
+    ggplot(HomPop[HomPop$Country == i & HomPop$Admin == "Country", ], aes(x = Year)) +
+    geom_line(aes(y = Pop1), size = .5, color = "blue") +
+    geom_point(aes(y = Pop1), size = 1.5, color = "dark blue") +
+    ggtitle(paste("Total Population - ",
+                  unique(HomPop$Name[HomPop$Country == i]), " (",
+                  unique(HomPop$Country[HomPop$Country == i]), ")")) +
+    xlab("Year") +
+    ylab("Total Population") +
+    scale_x_continuous(breaks=seq(1950, 2015, 5), limits = c(1950, 2015)) +
+    scale_y_continuous(labels = comma) +
+    theme(
+      text = element_text(family = "serif", size = 12),
+      panel.grid.major.x = element_line(colour = "white"),
+      panel.grid.major.y = element_line(colour = "gray"),
+      panel.background = element_rect(fill = "white"))
+  
+  grid.arrange(Top, Bottom)
+  
+  print(paste(unique(HomPop$Name[HomPop$Country == i]), "(",
+              unique(HomPop$Country[HomPop$Country == i]), ") Done."), sep = NULL)
+  
+}
+
+dev.off()
+
+# 2. Investigate shared trends in Homicide Rate and in the Proportion of the Population between 15 to 24 years
+  #Year; HomRate; Per15_24
+     
+pdf("Plots/Year_HomRate_Per1524.pdf")
+
+for (i in unique(HomPop$Country)) {
+  
+  Top <- 
+    ggplot(HomPop[HomPop$Country == i & HomPop$Admin == "Country", ], aes(x = Year)) +
+    geom_line(aes(y = HomRate), size = .5, color = "red") +
+    geom_point(aes(y = HomRate), size = 1.5, color = "dark red") +
+    ggtitle(paste("Homicide Rate - ",
+                  unique(HomPop$Name[HomPop$Country == i]), " (",
+                  unique(HomPop$Country[HomPop$Country == i]), ")")) +
+    ylab("Homicide Rate per 100,000 population") +
+    xlab("Year") +
+    scale_x_continuous(breaks=seq(1950, 2015, 5), limits = c(1950, 2015)) +
+    scale_y_continuous(labels = comma) +
+    theme(
+      text = element_text(family = "serif", size = 12),
+      panel.grid.major.x = element_line(colour = "white"),
+      panel.grid.major.y = element_line(colour = "gray"),
+      panel.background = element_rect(fill = "white"))
+
+  
+  Bottom <- 
+    ggplot(HomPop[HomPop$Country == i & HomPop$Admin == "Country", ], aes(x = Year)) +
+    geom_line(aes(y = Per15_24), size = .5, color = "blue") +
+    geom_point(aes(y = Per15_24), size = 1.5, color = "dark blue") +
+    ggtitle(paste("Percent Aged 15 to 24 - ",
+                  unique(HomPop$Name[HomPop$Country == i]), " (",
+                  unique(HomPop$Country[HomPop$Country == i]), ")")) +
+    xlab("Year") +
+    ylab("Percent of the Population Aged 15 to 24") +
+    scale_x_continuous(breaks=seq(1950, 2015, 5), limits = c(1950, 2015)) +
+    scale_y_continuous(labels = percent) +
+    theme(
+      text = element_text(family = "serif", size = 12),
+      panel.grid.major.x = element_line(colour = "white"),
+      panel.grid.major.y = element_line(colour = "gray"),
+      panel.background = element_rect(fill = "white"))
+  
+  grid.arrange(Top, Bottom)
+  
+  print(paste(unique(HomPop$Name[HomPop$Country == i]), "(",
+              unique(HomPop$Country[HomPop$Country == i]), ") Done."), sep = NULL)
+
+}
+
+dev.off()
+
+# 3. Investigate the Association between Homicide Rates and the Proportion of the Population between 15 to 24 years
+  #HomRate; Per15_24
+
+pdf("Plots/Scatter_HomRate_Per1524.pdf")
+
+for (i in unique(HomPop$Country)) {
+  dots <- ggplot(HomPop[HomPop$Country == i & HomPop$Admin == "Country", ], 
+                 aes(x = (Per15_24/100))) +
+    geom_smooth(aes(y = HomRate), method = "lm") +
+    geom_point(aes(y = HomRate), alpha = .5) +
+    ggtitle(paste("Population 15 to 24 and Homicide Rate - ",
+                  unique(HomPop$Name[HomPop$Country == i]), " (",
+                  unique(HomPop$Country[HomPop$Country == i]), ")")) +
+    ylab("Homicide Rate per 100,000 population") +
+    xlab("Percent of the Population Aged 15 to 24") +
+    scale_x_continuous(labels = percent) +
+    scale_y_continuous(labels = comma) +
+    theme(
+      text = element_text(family = "serif", size = 12),
+      panel.grid.major.x = element_line(colour = "white"),
+      panel.grid.major.y = element_line(colour = "gray"),
+      panel.background = element_rect(fill = "white"))
+  
+  grid.arrange(dots)
+
+  print(paste(unique(HomPop$Name[HomPop$Country == i]), "(",
+              unique(HomPop$Country[HomPop$Country == i]), ") Done."), sep = NULL)
+
+}
+
+dev.off()
+
+```
+
+
+# Models
+Summary models of the relationship between the percentage of the population between 14 and 24 years of age, and the homicide rate of countries. OLS estimates. More adequade fixed effect models require adjsments to the data, but will be executed in the future.
+
+```{r Models}
+
+# Simple Linear Regression with an Unstransformed Dependent Variable
+ols <-lm(HomRate ~ Per15_24, data=HomPop)
+
+summary(ols)
+
+ols$coefficients[2]
+
+# However, the distribution of Homicide Rates is highly skewed to the right.
+hist(HomPop$HomRate)
+
+# Since there are no real zeros in the scale of homicide rates, I will log-transform the dependent variable
+
+HomPop$Log_HomRate <- log(HomPop$HomRate)
+HomPop$Log_HomRate[which(is.infinite(HomPop$Log_HomRate))] <- NA
+
+ols_log <-lm(Log_HomRate ~ Per15_24, data=HomPop, na.action = na.omit)
+
+summary(ols_log)
+
+exp(ols_log$coefficients[2])
+
+```
+
+On average, each addition percentage point in the proportion of the population between 15 to 24 years of age, corresponds to `r exp(ols_log$coefficients[2])` more homicides. Results are preliminary. They only consider countries and years with observable valid numbers. The model also desconsider the dependence in residuals within countries.
+
+I will later execute a fixed effects model (plm), but only after complementing and cleaning the data.
+
+In particular, many rates are missing due to lack of data on population size, which can be easily acessible from other sources.

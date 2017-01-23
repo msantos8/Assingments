@@ -31,6 +31,7 @@ library(ggplot2)
 
 #I am loading a dataset that I am currently formatting, that includes only Homicides. The code for this data is in the "WHO Mortality.Rmd" file
 load("data/Homicide.Cause.RData")
+load("data/Population.RData")
 
 #The unit of analysis is the number of deaths by cause, sex, year and country. I am collapsing it to country and year. I am just keepign some variables
 Homicide.Sum <- data.frame(
@@ -157,6 +158,8 @@ ggplot(Homicide.Pop, aes(Per15_24, HomicideRate)) +
 dev.off()
 
 png("day07_homework_line.png")
+
+
 ggplot(Homicide.Pop[Homicide.Pop$Country == 2450,], aes(x = Year)) +
   geom_line(aes(y = HomicideRate, color = "red"), size = 1.2) +
   geom_line(aes(y = Per15_24, color = "blue"), size = 1.2) +
@@ -165,6 +168,7 @@ ggplot(Homicide.Pop[Homicide.Pop$Country == 2450,], aes(x = Year)) +
   theme(legend.position = "none", 
         text = element_text(family = "serif", size = 12),
         panel.border = element_blank())
+
 dev.off()
 ```
 

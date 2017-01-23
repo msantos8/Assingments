@@ -1,0 +1,55 @@
+---
+title: "Day 9 Practice"
+output: html_document
+---
+
+1. Create a function to compute standard error of a mean.  The formula is to take the standard deviation of a set of observations (i.e., numbers), divided by the square root of N, where N is the number of observations. Try this out on a few samples
+
+```{r}
+sd.mean <- function(x) {
+  sd(x)/sqrt(length(x))
+}
+
+vector <- c(4,2,1,3)
+
+sd.mean(a)
+
+```
+
+2. Create another function, which takes a four-member vector as its argument. The function should:
+  - get the square root of the sum of the first two members, the square root of the sum of the second two members, and then take the mean of the two square roots
+  - use `apply()` to apply this function across the rows of observations in the `iris` data set, and put that result in a new column
+  - use `mutate()` to get the same result
+  
+  
+```{r}
+weird <- function(arg) {
+  step1 <- sqrt(sum(arg[1], arg[2]))
+  step2 <- sqrt(sum(arg[3], arg[4]))
+  step3 <- mean(step1, step2)
+}
+
+myris <- iris
+head(myris)
+
+myris$applied <- apply(myris[,1:4], 1, weird)
+
+head(myris)
+
+library(dplyr)
+
+myris <- mutate(myris, mutated = weird(1:4), rowwise(myris))
+
+head(myris)
+
+```
+
+3. Make another copy of the iris data set.
+  - Use `group_by` and `summarize` to get the mean, standard deviation, and N (`length()`) of Sepal.Width for each of the species.
+  - Use `mutate` and the standard error function from #1 to create a column in this summary table that gives the standard error
+  - Use the `%>%` operator to do all of these things at once
+
+```{r}
+
+```
+

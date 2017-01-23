@@ -1,3 +1,276 @@
+HomPop[HomPop$Per15_24 > 1, ]
+
+
+ggplot(HomPop[HomPop$Country == 1125 & HomPop$Admin == "Country", ], aes(x = HomRate)) +
+  geom_smooth(aes(y = Per15_24), method = "lm") +
+  geom_point(aes(y = Per15_24), alpha = .5) +
+  ggtitle(paste("Scatter Plot between the Percentage of the Population Aged 15 to 24 and Homicide Rate by Year - ",
+                unique(HomPop$Name[HomPop$Country == 1125]), " (",
+                unique(HomPop$Country[HomPop$Country == 1125]), ")")) +
+  ylab("Homicide Rate per 100,000 population") +
+  xlab("Percent of the Population Aged 15 to 24") +
+  scale_x_continuous(labels = comma) +
+  scale_y_continuous(labels = comma) +
+  theme(
+    text = element_text(family = "serif", size = 12),
+    panel.grid.major.x = element_line(colour = "white"),
+    panel.grid.major.y = element_line(colour = "gray"),
+    panel.background = element_rect(fill = "white"))
+
+
+
+unique(HomPop$Country)
+
+ggplot(HomPop[HomPop$Country == 1125 & HomPop$Admin == "Country", ], aes(x = Year)) +
+  geom_line(aes(y = HomRate), size = .5, color = "red") +
+  geom_point(aes(y = HomRate), size = 1.5, color = "dark red") +
+  ggtitle(paste("Homicide Rate - ",
+                unique(HomPop$Name[HomPop$Country == 1125]), " (",
+                unique(HomPop$Country[HomPop$Country == 1125]), ")")) +
+  ylab("Homicide Rate per 100,000 population") +
+  xlab("Year") +
+  scale_x_continuous(breaks=seq(1950, 2015, 5), limits = c(1950, 2015)) +
+  scale_y_continuous(labels = comma) +
+  theme(
+    text = element_text(family = "serif", size = 12),
+    panel.grid.major.x = element_line(colour = "white"),
+    panel.grid.major.y = element_line(colour = "gray"),
+    panel.background = element_rect(fill = "white"))
+
+
+
+ggplot(HomPop[HomPop$Country == 2450 & HomPop$Admin == "Country", ], aes(x = Year)) +
+  geom_line(aes(y = Per14_24), size = .5, color = "blue") +
+  geom_point(aes(y = Per14_24), size = 1.5, color = "dark blue") +
+  ggtitle(paste("Percent Aged 15 to 24 - ",
+                unique(HomPop$Name[HomPop$Country == 2450]), " (",
+                unique(HomPop$Country[HomPop$Country == 2450]), ")")) +
+  xlab("Year") +
+  ylab("Percent of the Population Aged 15 to 24") +
+  scale_x_continuous(breaks=seq(1950, 2015, 5), limits = c(1950, 2015)) +
+  scale_y_continuous(labels = comma) +
+  theme(
+    text = element_text(family = "serif", size = 12),
+    panel.grid.major.x = element_line(colour = "white"),
+    panel.grid.major.y = element_line(colour = "gray"),
+    panel.background = element_rect(fill = "white"))
+
+
+
+
+ggplot(HomPop[HomPop$Country == 2070 & HomPop$Admin == "Country", ], aes(x = Year)) +
+  geom_line(aes(y = HomRate), size = .5, color = "red") +
+  geom_point(aes(y = HomRate), size = 1.5, color = "dark red") +
+  ggtitle(paste("Total Homicides for",
+                unique(HomPop$Name[HomPop$Country == 2070]), " (",
+                unique(HomPop$Country[HomPop$Country == 2070]), ")")) +
+  xlab("Year") +
+  ylab("Homicide Rate per 100,000 Population") +
+  scale_x_continuous(breaks=seq(1950, 2015, 5), limits = c(1950, 2015)) +
+  scale_y_continuous(labels = comma) +
+  theme(
+    text = element_text(family = "serif", size = 12),
+    panel.grid.major.x = element_line(colour = "white"),
+    panel.grid.major.y = element_line(colour = "gray"),
+    panel.background = element_rect(fill = "white"))
+
+
+HomPop[HomPop$Name == "Brazil", c(1:9)]
+
+#File
+rm(list = ls())
+load("Data/Homicide.RData")
+load("Data/Mortality.RData")
+load("Data/Population.RData")
+
+load("Data/Data Jan21_2017.RData")
+
+#######################################################################################
+#History
+
+
+
+#######
+
+summary(HomPop$Year)
+
+
+ifelse(sum(HomPop$Deaths1, na.rm = TRUE) > 0, print("ok"), print("no"))
+
+orig.par = par(no.readonly = TRUE)
+pdf(file = "just_plots.pdf")
+par(mfrow=c(2,2))
+
+pdf("Homicide & Population.pdf")
+for (i in unique(HomPop$Country)) {
+  ifelse(sum)
+}
+
+pdf("day08_homework_plots.pdf")
+for (i in unique(Homicide.Pop$Country)) {
+  print(paste("For Country =", unique(Homicide.Pop$Name[Homicide.Pop$Country == i])))
+  tryCatch({
+    print(ggplot(Homicide.Pop[Homicide.Pop$Country == i,], aes(Per15_24, HomicideRate)) +
+            geom_point(alpha = .5, size = 3) +
+            ggtitle(paste("Homicide Rate and Percent 15 to 24 for Country", 
+                          unique(Homicide.Pop$Name[Homicide.Pop$Country == i]))) +
+            geom_smooth(method = lm, color = "red") +
+            theme_bw () +
+            theme(text = element_text(family = "serif", size = 12),
+                  panel.border = element_blank()) +
+            xlab("Percent 15 to 24") +
+            ylab("Homicide Rate"))
+  }, error=function(e){cat(paste("ERROR in Country =", unique(Homicide.Pop$Name[Homicide.Pop$Country == i])),conditionMessage(e), "\n")})
+}
+dev.off()
+
+
+
+facet_grid(~ Country)
+
+see <- HomPop[HomPop$Country == 2450, ]
+
+ggplot(HomPop[HomPop$Country == 2450,], aes(Year)) +
+  geom_line(aes(y = Deaths1))
+
+ggplot(HomPop[HomPop$Country == 2450,], aes(Year)) +
+  geom_line(aes(y = HomicideRate)) +
+  geom_line(aes(y = Per15_24))
+
+
+
+Homicide <- data.frame(
+  summarise_all(group_by(Homicide[,-7], 
+                         Country, Year, Admin1, SubDiv, ICD, List, Frmat, IM_Frmat),
+                funs(sum), na.rm = TRUE))
+
+
+
+## Merge Population
+
+```{r}
+Population <- read.csv(unzip("Data/Pop.zip"))
+save(Population, file = "Data/Population.RData")
+
+load("Data/Mortality.RData")
+load("Data/Population.RData")
+
+ls()
+str(Mortality)
+
+colnames(Population) %in% colnames(Mortality) # Returns a logical where true is if the first thing is in the second thing
+
+colnames(Population) %in% colnames(Mortality)
+
+sum(colnames(Mortality) %in% colnames(Population)) #How many trues
+
+which() # Which ones are true
+
+Homicide_Population <- merge(Homicide, Population, all = TRUE)
+
+head (Merged)
+
+```
+
+
+
+colnames(Homicide)
+
+head(Homicide)
+
+head(Homicide)
+
+load(Homicide)
+
+
+for (i in 1:2) {
+  a<-paste("Homicide$Deaths", i, sep = "") <-
+    a<-apply(Homicide[, c(i+10,i+40,i+70)], MARGIN = 1, FUN = sum, na.rm = TRUE)
+}
+
+paste("Homicide$Deaths", i, sep = "")
+get(paste("Homicide$Deaths", i, sep = ""))
+
+colnames(Homicide)
+
+for(i in 1:2){
+  print(paste("A", i, sep = ""))
+}
+
+
+?get
+?assign
+
+?tapply
+apply(Homicide[, i], MARGIN = 1, FUN = sum, na.rm = TRUE)
+
+apply
+
+?apply
+
+Homicide$Deaths1 <- apply(Homicide[, c(10,40,70)], MARGIN = 1, FUN = sum, na.rm = TRUE)
+
+apply(Homicide[, grep("^Deaths1\\.", colnames(Homicide))], 
+      MARGIN = 1, FUN = sum, na.rm = TRUE)
+
+grep("^Deaths1\\.", colnames(Homicide))
+
+head(Homicide)
+
+Homicide[Homicide$Country == 1060, 1:10]
+Homicide2[Homicide2$Country == 1060, 1:9]
+
+
+
+Country+Year+Admin1+SubDiv+List+Frmat+IM_Frmat
+apply
+
+usePackage('dplyr')
+
+head(Homicide)
+
+aggregate(Deaths1.Male~Year+Country, data=Homicide, sum, na.rm=TRUE)
+
+rm(a)
+
+aggregate(cbind(x1, x2)~year+month, data=df1, sum, na.rm=TRUE)
+
+aggregate(data = Homicide, FUN = sum)
+
+aggregate(Homicide$Deaths1.Male, by=list(c(Homicide$Country,Homicide$Year)), FUN=sum)
+
+tapply
+
+unique(Homicide$Country)
+
+save(Homicide, file = "Data/Homicide.RData")
+
+
+rm(list = ls())
+load("Data/Homicide.RData")
+load("Data/Mortality.RData")
+load("Data/Population.RData")
+
+head(Homicide)
+
+usePackage('reshape2')
+?reshape
+
+length(unique(Homicide$Country))
+length(unique(Homicide2$Country))
+
+is.na(Homicide$Admin1)
+
+unique(Homicide$Admin1)
+unique(Homicide$SubDiv)
+
+head(Homicide)
+head(Homicide2)
+
+Homicide$Admin1
+
+
+
 Homicide_07A <- Mortality[Mortality$List=="07A" & Mortality$Cause=="A149", ]
 Homicide_07B <- Mortality[Mortality$List=="07B" & Mortality$Cause=="B050", ]
 Homicide_08A <- Mortality[Mortality$List=="08A" & Mortality$Cause=="A148", ]
